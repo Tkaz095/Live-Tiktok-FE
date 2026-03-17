@@ -41,6 +41,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   // Real stats
   const [viewers, setViewers] = useState(0);
   const [likes, setLikes] = useState(0);
+  const [displayLikes, setDisplayLikes] = useState(0);
   const [coins, setCoins] = useState(0);
   const [displayCoins, setDisplayCoins] = useState(0);
   const [isLiveEnded, setIsLiveEnded] = useState(false);
@@ -198,7 +199,17 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       onUpdate: (v) => setDisplayCoins(Math.round(v)),
     });
     return () => ctrl.stop();
-  }, [coins]);
+  }, [coins]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Animate likes count-up
+  useEffect(() => {
+    const ctrl = animate(displayLikes, likes, {
+      duration: 1.5,
+      ease: "easeOut",
+      onUpdate: (v) => setDisplayLikes(Math.round(v)),
+    });
+    return () => ctrl.stop();
+  }, [likes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const avatar = getAvatar(username);
 
@@ -295,7 +306,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
             Tim
           </div>
           {connected ? (
-            <span className="text-tiktok-pink font-bold text-lg">{formatNumber(likes)}</span>
+            <span className="text-tiktok-pink font-bold text-lg">{formatNumber(displayLikes)}</span>
           ) : (
             <div className="w-12 h-5 rounded-md bg-[#333] animate-pulse" />
           )}
