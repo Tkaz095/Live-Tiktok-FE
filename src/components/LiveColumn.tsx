@@ -147,9 +147,21 @@ export default function LiveColumn({
     return () => controls.stop();
   }, [coins]);
 
+  // Pop-in effect on mount
+  useEffect(() => {
+    columnControls.start({
+      opacity: 1,
+      scale: 1,
+      transition: { type: "spring", stiffness: 300, damping: 20 }
+    });
+  }, [columnControls]);
+
   return (
     <motion.div 
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={columnControls}
+      exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+      layout
       className="w-[320px] shrink-0 h-full flex flex-col bg-tiktok-card rounded-xl border border-tiktok-border overflow-hidden relative group"
     >
       {/* Big Gift Overlay Animation */}

@@ -3,13 +3,27 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-export default function Navbar() {
+export default function Navbar({ onJoin, activeCount = 0 }: { onJoin?: (username: string) => void, activeCount?: number }) {
   const [url, setUrl] = useState("");
 
   const handleJoin = () => {
     if (!url) return;
-    // TODO: Thêm logic gọi Context hoặc Props
-    console.log("Joined: ", url);
+    
+    let extractedUsername = "";
+    
+    // Check if URL matches tiktok.com/@username
+    const match = url.match(/tiktok\.com\/@([a-zA-Z0-9_.-]+)/);
+    if (match && match[1]) {
+      extractedUsername = match[1];
+    } else {
+      // Fallback
+      extractedUsername = `user_${Math.floor(Math.random() * 1000)}`;
+    }
+
+    if (onJoin) {
+      onJoin(extractedUsername);
+    }
+    
     setUrl("");
   };
 
@@ -51,7 +65,7 @@ export default function Navbar() {
       <div className="flex items-center justify-end gap-2 text-sm w-[250px] shrink-0">
         <div className="flex flex-col items-end">
           <span className="text-gray-400 text-xs">Đang theo dõi</span>
-          <span className="text-tiktok-cyan font-bold text-xl leading-none">0</span>
+          <span className="text-tiktok-cyan font-bold text-xl leading-none">{activeCount}</span>
         </div>
       </div>
     </header>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import LiveColumn from "@/components/LiveColumn";
+import { AnimatePresence } from "framer-motion";
 
 // Mock data based on Figma requirements
 const MOCK_LIVES = [
@@ -20,20 +21,34 @@ export default function Home() {
     setActiveLives(prev => prev.filter(live => live.id !== id));
   };
 
+  const handleJoinLive = (username: string) => {
+    const newLive = {
+      id: Math.random().toString(36).substring(7),
+      username,
+      avatar: `https://i.pravatar.cc/150?u=${Math.random().toString(36).substring(7)}`,
+      viewers: 0,
+      likes: 0,
+      coins: 0
+    };
+    setActiveLives(prev => [newLive, ...prev]);
+  };
+
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-black text-white font-sans">
-      <Navbar />
+      <Navbar onJoin={handleJoinLive} activeCount={activeLives.length} />
       
       {/* Main Container */}
       <main className="flex-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto md:overflow-y-hidden bg-[#0a0a0a]">
         <div className="h-full p-4 flex flex-col md:flex-row gap-4 md:min-w-max items-center md:items-start">
-          {activeLives.map((live) => (
-            <LiveColumn 
-              key={live.id}
-              {...live}
-              onClose={handleClose}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {activeLives.map((live) => (
+              <LiveColumn 
+                key={live.id}
+                {...live}
+                onClose={handleClose}
+              />
+            ))}
+          </AnimatePresence>
           
           {/* Empty State / Add New Placeholder */}
           {activeLives.length === 0 && (
