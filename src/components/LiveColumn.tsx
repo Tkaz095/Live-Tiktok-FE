@@ -43,6 +43,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   const [likes, setLikes] = useState(0);
   const [coins, setCoins] = useState(0);
   const [displayCoins, setDisplayCoins] = useState(0);
+  const [isLiveEnded, setIsLiveEnded] = useState(false);
 
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [gifts, setGifts] = useState<GiftItem[]>([]);
@@ -136,6 +137,35 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       if (typeof data.like_count === "number") setLikes(data.like_count);
     });
 
+    socket.on("memberCount", (data) => {
+      if (typeof data.count === "number") setViewers(data.count);
+    });
+
+    socket.on("like", (data) => {
+      if (typeof data.likeCount === "number") setLikes(data.likeCount);
+      else if (typeof data.totalLikeCount === "number") setLikes(data.totalLikeCount);
+    });
+
+    socket.on("stream_end", () => {
+      setIsLiveEnded(true);
+      const endChat: ChatItem = {
+        id: Math.random().toString(36).substring(7),
+        user: "system",
+        message: `Live của kênh @${username} đã kết thúc`,
+      };
+      setChats((prev) => [endChat, ...prev].slice(0, 100));
+    });
+
+    socket.on("live_end", () => {
+      setIsLiveEnded(true);
+      const endChat: ChatItem = {
+        id: Math.random().toString(36).substring(7),
+        user: "system",
+        message: `Live của kênh @${username} đã kết thúc`,
+      };
+      setChats((prev) => [endChat, ...prev].slice(0, 100));
+    });
+
     // Pop-in on mount
     columnControls.start({
       opacity: 1,
@@ -150,6 +180,10 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       socket.off("chat");
       socket.off("gift");
       socket.off("live_stats");
+      socket.off("memberCount");
+      socket.off("like");
+      socket.off("stream_end");
+      socket.off("live_end");
       socket.disconnect();
       socketRef.current = null;
     };
@@ -215,7 +249,12 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
               <span className="text-tiktok-yellow font-medium">{formatNumber(displayCoins)}</span>
             </div>
             <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
-              {connected ? (
+              {isLiveEnded ? (
+                <>
+                  <WifiOff size={10} className="text-red-500" />
+                  <span className="text-red-500">phiên LIVE đã kết thúc</span>
+                </>
+              ) : connected ? (
                 <>
                   <Wifi size={10} className="text-green-400" />
                   <span className="text-green-400">LIVE • Đang kết nối</span>
@@ -242,7 +281,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
         <div className="flex flex-col items-center justify-center space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-gray-400">
             <Users size={14} className="text-tiktok-cyan" />
-            Theo dõi
+            Người xem
           </div>
           {connected ? (
             <span className="text-tiktok-cyan font-bold text-lg">{formatNumber(viewers)}</span>
