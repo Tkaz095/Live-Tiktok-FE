@@ -1,0 +1,1129 @@
+﻿{
+    "openapi":  "3.1.0",
+    "info":  {
+                 "title":  "TikTok Live Dashboard API",
+                 "description":  "Real-time TikTok Livestream Viewer Dashboard Backend",
+                 "version":  "1.0.0"
+             },
+    "paths":  {
+                  "/api/v1/health":  {
+                                         "get":  {
+                                                     "tags":  [
+                                                                  "livestream"
+                                                              ],
+                                                     "summary":  "Health Check",
+                                                     "description":  "Health check endpoint.",
+                                                     "operationId":  "health_check_api_v1_health_get",
+                                                     "responses":  {
+                                                                       "200":  {
+                                                                                   "description":  "Successful Response",
+                                                                                   "content":  {
+                                                                                                   "application/json":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/HealthCheckResponse"
+                                                                                                                                       }
+                                                                                                                        }
+                                                                                               }
+                                                                               }
+                                                                   }
+                                                 }
+                                     },
+                  "/api/v1/live/add":  {
+                                           "post":  {
+                                                        "tags":  [
+                                                                     "livestream"
+                                                                 ],
+                                                        "summary":  "Add Livestream",
+                                                        "description":  "Add a new livestream to monitor.\n\n- **url**: TikTok livestream URL (e.g., https://www.tiktok.com/@username/live)",
+                                                        "operationId":  "add_livestream_api_v1_live_add_post",
+                                                        "requestBody":  {
+                                                                            "content":  {
+                                                                                            "application/json":  {
+                                                                                                                     "schema":  {
+                                                                                                                                    "$ref":  "#/components/schemas/CreateLiveSessionRequest"
+                                                                                                                                }
+                                                                                                                 }
+                                                                                        },
+                                                                            "required":  true
+                                                                        },
+                                                        "responses":  {
+                                                                          "200":  {
+                                                                                      "description":  "Successful Response",
+                                                                                      "content":  {
+                                                                                                      "application/json":  {
+                                                                                                                               "schema":  {
+                                                                                                                                              "$ref":  "#/components/schemas/LiveSessionResponse"
+                                                                                                                                          }
+                                                                                                                           }
+                                                                                                  }
+                                                                                  },
+                                                                          "422":  {
+                                                                                      "description":  "Validation Error",
+                                                                                      "content":  {
+                                                                                                      "application/json":  {
+                                                                                                                               "schema":  {
+                                                                                                                                              "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                          }
+                                                                                                                           }
+                                                                                                  }
+                                                                                  }
+                                                                      }
+                                                    }
+                                       },
+                  "/api/v1/live/list":  {
+                                            "get":  {
+                                                        "tags":  [
+                                                                     "livestream"
+                                                                 ],
+                                                        "summary":  "List Livestreams",
+                                                        "description":  "List all active livestream sessions.",
+                                                        "operationId":  "list_livestreams_api_v1_live_list_get",
+                                                        "responses":  {
+                                                                          "200":  {
+                                                                                      "description":  "Successful Response",
+                                                                                      "content":  {
+                                                                                                      "application/json":  {
+                                                                                                                               "schema":  {
+                                                                                                                                              "$ref":  "#/components/schemas/LiveSessionListResponse"
+                                                                                                                                          }
+                                                                                                                           }
+                                                                                                  }
+                                                                                  }
+                                                                      }
+                                                    }
+                                        },
+                  "/api/v1/live/{live_id}":  {
+                                                 "delete":  {
+                                                                "tags":  [
+                                                                             "livestream"
+                                                                         ],
+                                                                "summary":  "Remove Livestream",
+                                                                "description":  "Stop and remove a livestream session.\n\n- **live_id**: Livestream session ID",
+                                                                "operationId":  "remove_livestream_api_v1_live__live_id__delete",
+                                                                "parameters":  [
+                                                                                   {
+                                                                                       "name":  "live_id",
+                                                                                       "in":  "path",
+                                                                                       "required":  true,
+                                                                                       "schema":  {
+                                                                                                      "type":  "string",
+                                                                                                      "title":  "Live Id"
+                                                                                                  }
+                                                                                   }
+                                                                               ],
+                                                                "responses":  {
+                                                                                  "200":  {
+                                                                                              "description":  "Successful Response",
+                                                                                              "content":  {
+                                                                                                              "application/json":  {
+                                                                                                                                       "schema":  {
+
+                                                                                                                                                  }
+                                                                                                                                   }
+                                                                                                          }
+                                                                                          },
+                                                                                  "422":  {
+                                                                                              "description":  "Validation Error",
+                                                                                              "content":  {
+                                                                                                              "application/json":  {
+                                                                                                                                       "schema":  {
+                                                                                                                                                      "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                  }
+                                                                                                                                   }
+                                                                                                          }
+                                                                                          }
+                                                                              }
+                                                            },
+                                                 "get":  {
+                                                             "tags":  [
+                                                                          "livestream"
+                                                                      ],
+                                                             "summary":  "Get Livestream",
+                                                             "description":  "Get detailed information about a livestream session (matches card display).",
+                                                             "operationId":  "get_livestream_api_v1_live__live_id__get",
+                                                             "parameters":  [
+                                                                                {
+                                                                                    "name":  "live_id",
+                                                                                    "in":  "path",
+                                                                                    "required":  true,
+                                                                                    "schema":  {
+                                                                                                   "type":  "string",
+                                                                                                   "title":  "Live Id"
+                                                                                               }
+                                                                                }
+                                                                            ],
+                                                             "responses":  {
+                                                                               "200":  {
+                                                                                           "description":  "Successful Response",
+                                                                                           "content":  {
+                                                                                                           "application/json":  {
+                                                                                                                                    "schema":  {
+                                                                                                                                                   "type":  "object",
+                                                                                                                                                   "title":  "Response Get Livestream Api V1 Live  Live Id  Get"
+                                                                                                                                               }
+                                                                                                                                }
+                                                                                                       }
+                                                                                       },
+                                                                               "422":  {
+                                                                                           "description":  "Validation Error",
+                                                                                           "content":  {
+                                                                                                           "application/json":  {
+                                                                                                                                    "schema":  {
+                                                                                                                                                   "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                               }
+                                                                                                                                }
+                                                                                                       }
+                                                                                       }
+                                                                           }
+                                                         }
+                                             },
+                  "/api/v1/live/{live_id}/status":  {
+                                                        "get":  {
+                                                                    "tags":  [
+                                                                                 "livestream"
+                                                                             ],
+                                                                    "summary":  "Get Livestream Status",
+                                                                    "description":  "Get detailed status of a livestream session.",
+                                                                    "operationId":  "get_livestream_status_api_v1_live__live_id__status_get",
+                                                                    "parameters":  [
+                                                                                       {
+                                                                                           "name":  "live_id",
+                                                                                           "in":  "path",
+                                                                                           "required":  true,
+                                                                                           "schema":  {
+                                                                                                          "type":  "string",
+                                                                                                          "title":  "Live Id"
+                                                                                                      }
+                                                                                       }
+                                                                                   ],
+                                                                    "responses":  {
+                                                                                      "200":  {
+                                                                                                  "description":  "Successful Response",
+                                                                                                  "content":  {
+                                                                                                                  "application/json":  {
+                                                                                                                                           "schema":  {
+
+                                                                                                                                                      }
+                                                                                                                                       }
+                                                                                                              }
+                                                                                              },
+                                                                                      "422":  {
+                                                                                                  "description":  "Validation Error",
+                                                                                                  "content":  {
+                                                                                                                  "application/json":  {
+                                                                                                                                           "schema":  {
+                                                                                                                                                          "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                      }
+                                                                                                                                       }
+                                                                                                              }
+                                                                                              }
+                                                                                  }
+                                                                }
+                                                    },
+                  "/api/v1/events/{live_id}":  {
+                                                   "get":  {
+                                                               "tags":  [
+                                                                            "livestream"
+                                                                        ],
+                                                               "summary":  "Get Events",
+                                                               "description":  "Get events for a livestream.\n\n- **limit**: Number of events to return (1-1000)\n- **offset**: Offset for pagination\n- **event_type**: Optional filter by event type",
+                                                               "operationId":  "get_events_api_v1_events__live_id__get",
+                                                               "parameters":  [
+                                                                                  {
+                                                                                      "name":  "live_id",
+                                                                                      "in":  "path",
+                                                                                      "required":  true,
+                                                                                      "schema":  {
+                                                                                                     "type":  "string",
+                                                                                                     "title":  "Live Id"
+                                                                                                 }
+                                                                                  },
+                                                                                  {
+                                                                                      "name":  "limit",
+                                                                                      "in":  "query",
+                                                                                      "required":  false,
+                                                                                      "schema":  {
+                                                                                                     "type":  "integer",
+                                                                                                     "maximum":  1000,
+                                                                                                     "minimum":  1,
+                                                                                                     "default":  100,
+                                                                                                     "title":  "Limit"
+                                                                                                 }
+                                                                                  },
+                                                                                  {
+                                                                                      "name":  "offset",
+                                                                                      "in":  "query",
+                                                                                      "required":  false,
+                                                                                      "schema":  {
+                                                                                                     "type":  "integer",
+                                                                                                     "minimum":  0,
+                                                                                                     "default":  0,
+                                                                                                     "title":  "Offset"
+                                                                                                 }
+                                                                                  },
+                                                                                  {
+                                                                                      "name":  "event_type",
+                                                                                      "in":  "query",
+                                                                                      "required":  false,
+                                                                                      "schema":  {
+                                                                                                     "anyOf":  [
+                                                                                                                   {
+                                                                                                                       "type":  "string"
+                                                                                                                   },
+                                                                                                                   {
+                                                                                                                       "type":  "null"
+                                                                                                                   }
+                                                                                                               ],
+                                                                                                     "title":  "Event Type"
+                                                                                                 }
+                                                                                  }
+                                                                              ],
+                                                               "responses":  {
+                                                                                 "200":  {
+                                                                                             "description":  "Successful Response",
+                                                                                             "content":  {
+                                                                                                             "application/json":  {
+                                                                                                                                      "schema":  {
+                                                                                                                                                     "$ref":  "#/components/schemas/EventListResponse"
+                                                                                                                                                 }
+                                                                                                                                  }
+                                                                                                         }
+                                                                                         },
+                                                                                 "422":  {
+                                                                                             "description":  "Validation Error",
+                                                                                             "content":  {
+                                                                                                             "application/json":  {
+                                                                                                                                      "schema":  {
+                                                                                                                                                     "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                 }
+                                                                                                                                  }
+                                                                                                         }
+                                                                                         }
+                                                                             }
+                                                           }
+                                               },
+                  "/api/v1/analytics/{live_id}/gifts":  {
+                                                            "get":  {
+                                                                        "tags":  [
+                                                                                     "livestream"
+                                                                                 ],
+                                                                        "summary":  "Get Gift Analytics",
+                                                                        "description":  "Get gift analytics for a livestream.",
+                                                                        "operationId":  "get_gift_analytics_api_v1_analytics__live_id__gifts_get",
+                                                                        "parameters":  [
+                                                                                           {
+                                                                                               "name":  "live_id",
+                                                                                               "in":  "path",
+                                                                                               "required":  true,
+                                                                                               "schema":  {
+                                                                                                              "type":  "string",
+                                                                                                              "title":  "Live Id"
+                                                                                                          }
+                                                                                           }
+                                                                                       ],
+                                                                        "responses":  {
+                                                                                          "200":  {
+                                                                                                      "description":  "Successful Response",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/GiftAnalytics"
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  },
+                                                                                          "422":  {
+                                                                                                      "description":  "Validation Error",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  }
+                                                                                      }
+                                                                    }
+                                                        },
+                  "/api/v1/analytics/{live_id}/stats":  {
+                                                            "get":  {
+                                                                        "tags":  [
+                                                                                     "livestream"
+                                                                                 ],
+                                                                        "summary":  "Get Livestream Stats",
+                                                                        "description":  "Get comprehensive statistics for a livestream.",
+                                                                        "operationId":  "get_livestream_stats_api_v1_analytics__live_id__stats_get",
+                                                                        "parameters":  [
+                                                                                           {
+                                                                                               "name":  "live_id",
+                                                                                               "in":  "path",
+                                                                                               "required":  true,
+                                                                                               "schema":  {
+                                                                                                              "type":  "string",
+                                                                                                              "title":  "Live Id"
+                                                                                                          }
+                                                                                           }
+                                                                                       ],
+                                                                        "responses":  {
+                                                                                          "200":  {
+                                                                                                      "description":  "Successful Response",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  },
+                                                                                          "422":  {
+                                                                                                      "description":  "Validation Error",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  }
+                                                                                      }
+                                                                    }
+                                                        },
+                  "/api/v1/export/{live_id}":  {
+                                                   "get":  {
+                                                               "tags":  [
+                                                                            "livestream"
+                                                                        ],
+                                                               "summary":  "Export Livestream Data",
+                                                               "description":  "Export livestream data.\n\n- **format**: Export format (json or csv)",
+                                                               "operationId":  "export_livestream_data_api_v1_export__live_id__get",
+                                                               "parameters":  [
+                                                                                  {
+                                                                                      "name":  "live_id",
+                                                                                      "in":  "path",
+                                                                                      "required":  true,
+                                                                                      "schema":  {
+                                                                                                     "type":  "string",
+                                                                                                     "title":  "Live Id"
+                                                                                                 }
+                                                                                  },
+                                                                                  {
+                                                                                      "name":  "format",
+                                                                                      "in":  "query",
+                                                                                      "required":  false,
+                                                                                      "schema":  {
+                                                                                                     "type":  "string",
+                                                                                                     "pattern":  "^(json|csv)$",
+                                                                                                     "default":  "json",
+                                                                                                     "title":  "Format"
+                                                                                                 }
+                                                                                  }
+                                                                              ],
+                                                               "responses":  {
+                                                                                 "200":  {
+                                                                                             "description":  "Successful Response",
+                                                                                             "content":  {
+                                                                                                             "application/json":  {
+                                                                                                                                      "schema":  {
+
+                                                                                                                                                 }
+                                                                                                                                  }
+                                                                                                         }
+                                                                                         },
+                                                                                 "422":  {
+                                                                                             "description":  "Validation Error",
+                                                                                             "content":  {
+                                                                                                             "application/json":  {
+                                                                                                                                      "schema":  {
+                                                                                                                                                     "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                 }
+                                                                                                                                  }
+                                                                                                         }
+                                                                                         }
+                                                                             }
+                                                           }
+                                               },
+                  "/api/v1/logs/{live_id}":  {
+                                                 "get":  {
+                                                             "tags":  [
+                                                                          "livestream"
+                                                                      ],
+                                                             "summary":  "Get Livestream Logs",
+                                                             "description":  "Get logs for a livestream.",
+                                                             "operationId":  "get_livestream_logs_api_v1_logs__live_id__get",
+                                                             "parameters":  [
+                                                                                {
+                                                                                    "name":  "live_id",
+                                                                                    "in":  "path",
+                                                                                    "required":  true,
+                                                                                    "schema":  {
+                                                                                                   "type":  "string",
+                                                                                                   "title":  "Live Id"
+                                                                                               }
+                                                                                },
+                                                                                {
+                                                                                    "name":  "limit",
+                                                                                    "in":  "query",
+                                                                                    "required":  false,
+                                                                                    "schema":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "maximum":  1000,
+                                                                                                   "minimum":  1,
+                                                                                                   "default":  100,
+                                                                                                   "title":  "Limit"
+                                                                                               }
+                                                                                },
+                                                                                {
+                                                                                    "name":  "offset",
+                                                                                    "in":  "query",
+                                                                                    "required":  false,
+                                                                                    "schema":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "minimum":  0,
+                                                                                                   "default":  0,
+                                                                                                   "title":  "Offset"
+                                                                                               }
+                                                                                }
+                                                                            ],
+                                                             "responses":  {
+                                                                               "200":  {
+                                                                                           "description":  "Successful Response",
+                                                                                           "content":  {
+                                                                                                           "application/json":  {
+                                                                                                                                    "schema":  {
+
+                                                                                                                                               }
+                                                                                                                                }
+                                                                                                       }
+                                                                                       },
+                                                                               "422":  {
+                                                                                           "description":  "Validation Error",
+                                                                                           "content":  {
+                                                                                                           "application/json":  {
+                                                                                                                                    "schema":  {
+                                                                                                                                                   "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                               }
+                                                                                                                                }
+                                                                                                       }
+                                                                                       }
+                                                                           }
+                                                         }
+                                             },
+                  "/api/v1/system/stats":  {
+                                               "get":  {
+                                                           "tags":  [
+                                                                        "livestream"
+                                                                    ],
+                                                           "summary":  "Get System Stats",
+                                                           "description":  "Get system statistics.",
+                                                           "operationId":  "get_system_stats_api_v1_system_stats_get",
+                                                           "responses":  {
+                                                                             "200":  {
+                                                                                         "description":  "Successful Response",
+                                                                                         "content":  {
+                                                                                                         "application/json":  {
+                                                                                                                                  "schema":  {
+
+                                                                                                                                             }
+                                                                                                                              }
+                                                                                                     }
+                                                                                     }
+                                                                         }
+                                                       }
+                                           }
+              },
+    "components":  {
+                       "schemas":  {
+                                       "ChatMessage":  {
+                                                           "properties":  {
+                                                                              "username":  {
+                                                                                               "type":  "string",
+                                                                                               "title":  "Username",
+                                                                                               "description":  "Username who sent message"
+                                                                                           },
+                                                                              "message":  {
+                                                                                              "type":  "string",
+                                                                                              "title":  "Message",
+                                                                                              "description":  "Message content"
+                                                                                          },
+                                                                              "user_badge":  {
+                                                                                                 "anyOf":  [
+                                                                                                               {
+                                                                                                                   "type":  "string"
+                                                                                                               },
+                                                                                                               {
+                                                                                                                   "type":  "null"
+                                                                                                               }
+                                                                                                           ],
+                                                                                                 "title":  "User Badge",
+                                                                                                 "description":  "User badge/role"
+                                                                                             },
+                                                                              "timestamp":  {
+                                                                                                "type":  "string",
+                                                                                                "format":  "date-time",
+                                                                                                "title":  "Timestamp"
+                                                                                            }
+                                                                          },
+                                                           "type":  "object",
+                                                           "required":  [
+                                                                            "username",
+                                                                            "message"
+                                                                        ],
+                                                           "title":  "ChatMessage",
+                                                           "description":  "Chat message in livestream."
+                                                       },
+                                       "CreateLiveSessionRequest":  {
+                                                                        "properties":  {
+                                                                                           "url":  {
+                                                                                                       "type":  "string",
+                                                                                                       "title":  "Url",
+                                                                                                       "description":  "TikTok livestream URL"
+                                                                                                   }
+                                                                                       },
+                                                                        "type":  "object",
+                                                                        "required":  [
+                                                                                         "url"
+                                                                                     ],
+                                                                        "title":  "CreateLiveSessionRequest",
+                                                                        "description":  "Request to create a new live session.",
+                                                                        "example":  {
+                                                                                        "url":  "https://www.tiktok.com/@username/live"
+                                                                                    }
+                                                                    },
+                                       "EventListResponse":  {
+                                                                 "properties":  {
+                                                                                    "live_id":  {
+                                                                                                    "type":  "string",
+                                                                                                    "title":  "Live Id"
+                                                                                                },
+                                                                                    "events":  {
+                                                                                                   "items":  {
+                                                                                                                 "$ref":  "#/components/schemas/NormalizedEvent"
+                                                                                                             },
+                                                                                                   "type":  "array",
+                                                                                                   "title":  "Events"
+                                                                                               },
+                                                                                    "total":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "title":  "Total"
+                                                                                              },
+                                                                                    "limit":  {
+                                                                                                  "type":  "integer",
+                                                                                                  "title":  "Limit"
+                                                                                              },
+                                                                                    "offset":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "title":  "Offset"
+                                                                                               },
+                                                                                    "timestamp":  {
+                                                                                                      "type":  "string",
+                                                                                                      "format":  "date-time",
+                                                                                                      "title":  "Timestamp"
+                                                                                                  }
+                                                                                },
+                                                                 "type":  "object",
+                                                                 "required":  [
+                                                                                  "live_id",
+                                                                                  "events",
+                                                                                  "total",
+                                                                                  "limit",
+                                                                                  "offset",
+                                                                                  "timestamp"
+                                                                              ],
+                                                                 "title":  "EventListResponse",
+                                                                 "description":  "Response containing list of events."
+                                                             },
+                                       "EventTypeEnum":  {
+                                                             "type":  "string",
+                                                             "enum":  [
+                                                                          "comment",
+                                                                          "gift",
+                                                                          "like",
+                                                                          "follow",
+                                                                          "share",
+                                                                          "join",
+                                                                          "envelope",
+                                                                          "question",
+                                                                          "unknown"
+                                                                      ],
+                                                             "title":  "EventTypeEnum",
+                                                             "description":  "Enum for event types."
+                                                         },
+                                       "GiftAnalytics":  {
+                                                             "properties":  {
+                                                                                "live_id":  {
+                                                                                                "type":  "string",
+                                                                                                "title":  "Live Id"
+                                                                                            },
+                                                                                "total_gifts":  {
+                                                                                                    "type":  "integer",
+                                                                                                    "title":  "Total Gifts",
+                                                                                                    "default":  0
+                                                                                                },
+                                                                                "total_coins":  {
+                                                                                                    "type":  "integer",
+                                                                                                    "title":  "Total Coins",
+                                                                                                    "default":  0
+                                                                                                },
+                                                                                "unique_gift_givers":  {
+                                                                                                           "type":  "integer",
+                                                                                                           "title":  "Unique Gift Givers",
+                                                                                                           "default":  0
+                                                                                                       },
+                                                                                "gifts":  {
+                                                                                              "items":  {
+                                                                                                            "$ref":  "#/components/schemas/GiftStats"
+                                                                                                        },
+                                                                                              "type":  "array",
+                                                                                              "title":  "Gifts"
+                                                                                          },
+                                                                                "last_updated":  {
+                                                                                                     "type":  "string",
+                                                                                                     "format":  "date-time",
+                                                                                                     "title":  "Last Updated"
+                                                                                                 }
+                                                                            },
+                                                             "type":  "object",
+                                                             "required":  [
+                                                                              "live_id",
+                                                                              "last_updated"
+                                                                          ],
+                                                             "title":  "GiftAnalytics",
+                                                             "description":  "Gift analytics for a livestream."
+                                                         },
+                                       "GiftNotification":  {
+                                                                "properties":  {
+                                                                                   "gift_id":  {
+                                                                                                   "type":  "string",
+                                                                                                   "title":  "Gift Id",
+                                                                                                   "description":  "Gift ID"
+                                                                                               },
+                                                                                   "gift_name":  {
+                                                                                                     "type":  "string",
+                                                                                                     "title":  "Gift Name",
+                                                                                                     "description":  "Gift name"
+                                                                                                 },
+                                                                                   "gift_icon":  {
+                                                                                                     "anyOf":  [
+                                                                                                                   {
+                                                                                                                       "type":  "string"
+                                                                                                                   },
+                                                                                                                   {
+                                                                                                                       "type":  "null"
+                                                                                                                   }
+                                                                                                               ],
+                                                                                                     "title":  "Gift Icon",
+                                                                                                     "description":  "Gift icon URL"
+                                                                                                 },
+                                                                                   "giver":  {
+                                                                                                 "type":  "string",
+                                                                                                 "title":  "Giver",
+                                                                                                 "description":  "Username who gave gift"
+                                                                                             },
+                                                                                   "count":  {
+                                                                                                 "type":  "integer",
+                                                                                                 "title":  "Count",
+                                                                                                 "description":  "Number of gifts",
+                                                                                                 "default":  1
+                                                                                             },
+                                                                                   "coin_value":  {
+                                                                                                      "type":  "integer",
+                                                                                                      "title":  "Coin Value",
+                                                                                                      "description":  "Coin value per gift",
+                                                                                                      "default":  0
+                                                                                                  },
+                                                                                   "timestamp":  {
+                                                                                                     "type":  "string",
+                                                                                                     "format":  "date-time",
+                                                                                                     "title":  "Timestamp"
+                                                                                                 }
+                                                                               },
+                                                                "type":  "object",
+                                                                "required":  [
+                                                                                 "gift_id",
+                                                                                 "gift_name",
+                                                                                 "giver"
+                                                                             ],
+                                                                "title":  "GiftNotification",
+                                                                "description":  "Gift notification in livestream."
+                                                            },
+                                       "GiftStats":  {
+                                                         "properties":  {
+                                                                            "gift_id":  {
+                                                                                            "anyOf":  [
+                                                                                                          {
+                                                                                                              "type":  "string"
+                                                                                                          },
+                                                                                                          {
+                                                                                                              "type":  "null"
+                                                                                                          }
+                                                                                                      ],
+                                                                                            "title":  "Gift Id"
+                                                                                        },
+                                                                            "gift_name":  {
+                                                                                              "anyOf":  [
+                                                                                                            {
+                                                                                                                "type":  "string"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type":  "null"
+                                                                                                            }
+                                                                                                        ],
+                                                                                              "title":  "Gift Name"
+                                                                                          },
+                                                                            "count":  {
+                                                                                          "type":  "integer",
+                                                                                          "title":  "Count",
+                                                                                          "default":  0
+                                                                                      },
+                                                                            "total_coins":  {
+                                                                                                "type":  "integer",
+                                                                                                "title":  "Total Coins",
+                                                                                                "default":  0
+                                                                                            },
+                                                                            "top_givers":  {
+                                                                                               "items":  {
+                                                                                                             "type":  "object"
+                                                                                                         },
+                                                                                               "type":  "array",
+                                                                                               "title":  "Top Givers"
+                                                                                           }
+                                                                        },
+                                                         "type":  "object",
+                                                         "title":  "GiftStats",
+                                                         "description":  "Gift statistics."
+                                                     },
+                                       "HTTPValidationError":  {
+                                                                   "properties":  {
+                                                                                      "detail":  {
+                                                                                                     "items":  {
+                                                                                                                   "$ref":  "#/components/schemas/ValidationError"
+                                                                                                               },
+                                                                                                     "type":  "array",
+                                                                                                     "title":  "Detail"
+                                                                                                 }
+                                                                                  },
+                                                                   "type":  "object",
+                                                                   "title":  "HTTPValidationError"
+                                                               },
+                                       "HealthCheckResponse":  {
+                                                                   "properties":  {
+                                                                                      "status":  {
+                                                                                                     "type":  "string",
+                                                                                                     "title":  "Status"
+                                                                                                 },
+                                                                                      "timestamp":  {
+                                                                                                        "type":  "string",
+                                                                                                        "format":  "date-time",
+                                                                                                        "title":  "Timestamp"
+                                                                                                    },
+                                                                                      "version":  {
+                                                                                                      "type":  "string",
+                                                                                                      "title":  "Version"
+                                                                                                  }
+                                                                                  },
+                                                                   "type":  "object",
+                                                                   "required":  [
+                                                                                    "status",
+                                                                                    "timestamp",
+                                                                                    "version"
+                                                                                ],
+                                                                   "title":  "HealthCheckResponse",
+                                                                   "description":  "Health check response."
+                                                               },
+                                       "LiveSessionListResponse":  {
+                                                                       "properties":  {
+                                                                                          "sessions":  {
+                                                                                                           "items":  {
+                                                                                                                         "$ref":  "#/components/schemas/LiveSessionResponse"
+                                                                                                                     },
+                                                                                                           "type":  "array",
+                                                                                                           "title":  "Sessions"
+                                                                                                       },
+                                                                                          "total":  {
+                                                                                                        "type":  "integer",
+                                                                                                        "title":  "Total"
+                                                                                                    },
+                                                                                          "timestamp":  {
+                                                                                                            "type":  "string",
+                                                                                                            "format":  "date-time",
+                                                                                                            "title":  "Timestamp"
+                                                                                                        }
+                                                                                      },
+                                                                       "type":  "object",
+                                                                       "required":  [
+                                                                                        "sessions",
+                                                                                        "total",
+                                                                                        "timestamp"
+                                                                                    ],
+                                                                       "title":  "LiveSessionListResponse",
+                                                                       "description":  "Response containing list of active sessions."
+                                                                   },
+                                       "LiveSessionResponse":  {
+                                                                   "properties":  {
+                                                                                      "live_id":  {
+                                                                                                      "type":  "string",
+                                                                                                      "title":  "Live Id",
+                                                                                                      "description":  "Unique livestream ID"
+                                                                                                  },
+                                                                                      "username":  {
+                                                                                                       "type":  "string",
+                                                                                                       "title":  "Username",
+                                                                                                       "description":  "Streamer username"
+                                                                                                   },
+                                                                                      "status":  {
+                                                                                                     "allOf":  [
+                                                                                                                   {
+                                                                                                                       "$ref":  "#/components/schemas/LiveSessionStatusEnum"
+                                                                                                                   }
+                                                                                                               ],
+                                                                                                     "description":  "Livestream status"
+                                                                                                 },
+                                                                                      "created_at":  {
+                                                                                                         "type":  "string",
+                                                                                                         "format":  "date-time",
+                                                                                                         "title":  "Created At",
+                                                                                                         "description":  "Session creation time"
+                                                                                                     },
+                                                                                      "updated_at":  {
+                                                                                                         "type":  "string",
+                                                                                                         "format":  "date-time",
+                                                                                                         "title":  "Updated At",
+                                                                                                         "description":  "Last update time"
+                                                                                                     },
+                                                                                      "viewer_count":  {
+                                                                                                           "anyOf":  [
+                                                                                                                         {
+                                                                                                                             "type":  "integer"
+                                                                                                                         },
+                                                                                                                         {
+                                                                                                                             "type":  "null"
+                                                                                                                         }
+                                                                                                                     ],
+                                                                                                           "title":  "Viewer Count",
+                                                                                                           "description":  "Current viewer count"
+                                                                                                       },
+                                                                                      "event_count":  {
+                                                                                                          "type":  "integer",
+                                                                                                          "title":  "Event Count",
+                                                                                                          "description":  "Total events received",
+                                                                                                          "default":  0
+                                                                                                      },
+                                                                                      "total_coins":  {
+                                                                                                          "type":  "integer",
+                                                                                                          "title":  "Total Coins",
+                                                                                                          "description":  "Tá»ng xu phiÃªn nÃ y (Total coins this session)",
+                                                                                                          "default":  0
+                                                                                                      },
+                                                                                      "followers_count":  {
+                                                                                                              "type":  "integer",
+                                                                                                              "title":  "Followers Count",
+                                                                                                              "description":  "Theo dÃµi (Followers)",
+                                                                                                              "default":  0
+                                                                                                          },
+                                                                                      "likes_count":  {
+                                                                                                          "type":  "integer",
+                                                                                                          "title":  "Likes Count",
+                                                                                                          "description":  "Sá» tim (Likes)",
+                                                                                                          "default":  0
+                                                                                                      },
+                                                                                      "comments_count":  {
+                                                                                                             "type":  "integer",
+                                                                                                             "title":  "Comments Count",
+                                                                                                             "description":  "Comments count",
+                                                                                                             "default":  0
+                                                                                                         },
+                                                                                      "shares_count":  {
+                                                                                                           "type":  "integer",
+                                                                                                           "title":  "Shares Count",
+                                                                                                           "description":  "Shares count",
+                                                                                                           "default":  0
+                                                                                                       },
+                                                                                      "recent_gifts":  {
+                                                                                                           "items":  {
+                                                                                                                         "$ref":  "#/components/schemas/GiftNotification"
+                                                                                                                     },
+                                                                                                           "type":  "array",
+                                                                                                           "title":  "Recent Gifts",
+                                                                                                           "description":  "ThÃ´ng bÃ¡o quÃ  táº·ng (Recent gifts)"
+                                                                                                       },
+                                                                                      "total_gifts":  {
+                                                                                                          "type":  "integer",
+                                                                                                          "title":  "Total Gifts",
+                                                                                                          "description":  "Total gifts received",
+                                                                                                          "default":  0
+                                                                                                      },
+                                                                                      "recent_chats":  {
+                                                                                                           "items":  {
+                                                                                                                         "$ref":  "#/components/schemas/ChatMessage"
+                                                                                                                     },
+                                                                                                           "type":  "array",
+                                                                                                           "maxItems":  20,
+                                                                                                           "title":  "Recent Chats",
+                                                                                                           "description":  "Chat trá»±c tiáº¿p (Recent chat messages)"
+                                                                                                       }
+                                                                                  },
+                                                                   "type":  "object",
+                                                                   "required":  [
+                                                                                    "live_id",
+                                                                                    "username",
+                                                                                    "status",
+                                                                                    "created_at",
+                                                                                    "updated_at"
+                                                                                ],
+                                                                   "title":  "LiveSessionResponse",
+                                                                   "description":  "Response containing live session info matching TikTok Live card.",
+                                                                   "example":  {
+                                                                                   "comments_count":  45,
+                                                                                   "created_at":  "2024-01-01T12:00:00",
+                                                                                   "event_count":  1250,
+                                                                                   "followers_count":  1189,
+                                                                                   "likes_count":  20200,
+                                                                                   "live_id":  "live_1234567890",
+                                                                                   "recent_chats":  [
+                                                                                                        {
+                                                                                                            "message":  "Xuáº¥t sáº¯c!",
+                                                                                                            "timestamp":  "2024-01-01T12:04:30",
+                                                                                                            "user_badge":  "verified",
+                                                                                                            "username":  "tiktok_star"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "message":  "Hello! ð",
+                                                                                                            "timestamp":  "2024-01-01T12:04:20",
+                                                                                                            "username":  "viewer2024"
+                                                                                                        }
+                                                                                                    ],
+                                                                                   "recent_gifts":  [
+                                                                                                        {
+                                                                                                            "coin_value":  50,
+                                                                                                            "count":  91,
+                                                                                                            "gift_icon":  "https://...",
+                                                                                                            "gift_id":  "gift_123",
+                                                                                                            "gift_name":  "Galaxy",
+                                                                                                            "giver":  "vn_user",
+                                                                                                            "timestamp":  "2024-01-01T12:04:00"
+                                                                                                        }
+                                                                                                    ],
+                                                                                   "shares_count":  12,
+                                                                                   "status":  "live",
+                                                                                   "total_coins":  18891,
+                                                                                   "total_gifts":  150,
+                                                                                   "updated_at":  "2024-01-01T12:05:00",
+                                                                                   "username":  "linh_nguyen",
+                                                                                   "viewer_count":  1189
+                                                                               }
+                                                               },
+                                       "LiveSessionStatusEnum":  {
+                                                                     "type":  "string",
+                                                                     "enum":  [
+                                                                                  "connecting",
+                                                                                  "live",
+                                                                                  "disconnected",
+                                                                                  "error",
+                                                                                  "stopped"
+                                                                              ],
+                                                                     "title":  "LiveSessionStatusEnum",
+                                                                     "description":  "Enum for livestream session status."
+                                                                 },
+                                       "NormalizedEvent":  {
+                                                               "properties":  {
+                                                                                  "live_id":  {
+                                                                                                  "type":  "string",
+                                                                                                  "title":  "Live Id"
+                                                                                              },
+                                                                                  "event_type":  {
+                                                                                                     "$ref":  "#/components/schemas/EventTypeEnum"
+                                                                                                 },
+                                                                                  "username":  {
+                                                                                                   "type":  "string",
+                                                                                                   "title":  "Username"
+                                                                                               },
+                                                                                  "content":  {
+                                                                                                  "anyOf":  [
+                                                                                                                {
+                                                                                                                    "type":  "string"
+                                                                                                                },
+                                                                                                                {
+                                                                                                                    "type":  "null"
+                                                                                                                }
+                                                                                                            ],
+                                                                                                  "title":  "Content"
+                                                                                              },
+                                                                                  "metadata":  {
+                                                                                                   "type":  "object",
+                                                                                                   "title":  "Metadata"
+                                                                                               },
+                                                                                  "timestamp":  {
+                                                                                                    "type":  "string",
+                                                                                                    "format":  "date-time",
+                                                                                                    "title":  "Timestamp"
+                                                                                                },
+                                                                                  "raw_event":  {
+                                                                                                    "anyOf":  [
+                                                                                                                  {
+                                                                                                                      "type":  "object"
+                                                                                                                  },
+                                                                                                                  {
+                                                                                                                      "type":  "null"
+                                                                                                                  }
+                                                                                                              ],
+                                                                                                    "title":  "Raw Event"
+                                                                                                }
+                                                                              },
+                                                               "type":  "object",
+                                                               "required":  [
+                                                                                "live_id",
+                                                                                "event_type",
+                                                                                "username",
+                                                                                "timestamp"
+                                                                            ],
+                                                               "title":  "NormalizedEvent",
+                                                               "description":  "Normalized event from any source.",
+                                                               "example":  {
+                                                                               "content":  "Great stream!",
+                                                                               "event_type":  "comment",
+                                                                               "live_id":  "live_1234567890",
+                                                                               "metadata":  {
+                                                                                                "avatar":  "https://...",
+                                                                                                "user_id":  "123456789"
+                                                                                            },
+                                                                               "timestamp":  "2024-01-01T12:00:00",
+                                                                               "username":  "viewer_123"
+                                                                           }
+                                                           },
+                                       "ValidationError":  {
+                                                               "properties":  {
+                                                                                  "loc":  {
+                                                                                              "items":  {
+                                                                                                            "anyOf":  [
+                                                                                                                          {
+                                                                                                                              "type":  "string"
+                                                                                                                          },
+                                                                                                                          {
+                                                                                                                              "type":  "integer"
+                                                                                                                          }
+                                                                                                                      ]
+                                                                                                        },
+                                                                                              "type":  "array",
+                                                                                              "title":  "Location"
+                                                                                          },
+                                                                                  "msg":  {
+                                                                                              "type":  "string",
+                                                                                              "title":  "Message"
+                                                                                          },
+                                                                                  "type":  {
+                                                                                               "type":  "string",
+                                                                                               "title":  "Error Type"
+                                                                                           }
+                                                                              },
+                                                               "type":  "object",
+                                                               "required":  [
+                                                                                "loc",
+                                                                                "msg",
+                                                                                "type"
+                                                                            ],
+                                                               "title":  "ValidationError"
+                                                           }
+                                   }
+                   }
+}
+

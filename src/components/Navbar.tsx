@@ -3,28 +3,42 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-export default function Navbar({ onJoin, activeCount = 0 }: { onJoin?: (username: string) => void, activeCount?: number }) {
+export default function Navbar({
+  onJoin,
+  activeCount = 0,
+}: {
+  onJoin?: (username: string) => void;
+  activeCount?: number;
+}) {
   const [url, setUrl] = useState("");
 
   const handleJoin = () => {
-    if (!url) return;
-    
-    let extractedUsername = "";
-    
-    // Check if URL matches tiktok.com/@username
-    const match = url.match(/tiktok\.com\/@([a-zA-Z0-9_.-]+)/);
+    const trimmed = url.trim();
+    if (!trimmed) return;
+
+    let username = "";
+
+    // Match tiktok.com/@username or tiktok.com/@username/live
+    const match = trimmed.match(/tiktok\.com\/@([a-zA-Z0-9_.]+)/);
     if (match && match[1]) {
-      extractedUsername = match[1];
+      username = match[1];
+    } else if (trimmed.startsWith("@")) {
+      // Direct @username input
+      username = trimmed.slice(1);
     } else {
-      // Fallback
-      extractedUsername = `user_${Math.floor(Math.random() * 1000)}`;
+      // Plain username input
+      username = trimmed;
     }
 
-    if (onJoin) {
-      onJoin(extractedUsername);
+    if (onJoin && username) {
+      onJoin(username);
     }
-    
+
     setUrl("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleJoin();
   };
 
   return (
@@ -47,7 +61,8 @@ export default function Navbar({ onJoin, activeCount = 0 }: { onJoin?: (username
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Dán link TikTok Live hoặc username..."
+              onKeyDown={handleKeyDown}
+              placeholder="Dán link TikTok Live hoặc @username..."
               className="w-full bg-[#1b1b1b] border border-tiktok-border rounded-full py-2.5 px-5 text-sm focus:outline-none focus:border-tiktok-cyan transition-colors text-white placeholder-gray-500 hover:border-[#444]"
             />
           </div>
@@ -60,12 +75,14 @@ export default function Navbar({ onJoin, activeCount = 0 }: { onJoin?: (username
           </button>
         </div>
       </div>
-      
+
       {/* Right Stats */}
       <div className="flex items-center justify-end gap-2 text-sm w-[250px] shrink-0">
         <div className="flex flex-col items-end">
           <span className="text-gray-400 text-xs">Đang theo dõi</span>
-          <span className="text-tiktok-cyan font-bold text-xl leading-none">{activeCount}</span>
+          <span className="text-tiktok-cyan font-bold text-xl leading-none">
+            {activeCount}
+          </span>
         </div>
       </div>
     </header>
