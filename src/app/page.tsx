@@ -1,14 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import LiveColumn from "@/components/LiveColumn";
 import { AnimatePresence } from "framer-motion";
+import { useAuth } from "@/lib/AuthContext";
 
 const STORAGE_KEY = "followedUsers";
 
 export default function Home() {
+  const router = useRouter();
+  const { user, plan, isLoading } = useAuth();
   const [activeLives, setActiveLives] = useState<string[]>([]);
+
+  // Auth guard
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, isLoading, router]);
 
   // Load persisted list from localStorage on mount
   useEffect(() => {
@@ -31,10 +42,14 @@ export default function Home() {
   }, [activeLives]);
 
   const handleJoin = (username: string) => {
-    if (!username) return;
+    if (!username || !plan) return;
     setActiveLives(prev => {
-      // Prevent duplicate columns for the same username
       if (prev.includes(username)) return prev;
+      // Enforce subscription column limit
+      const maxCols = plan.maxColumns;
+      if (maxCols !== -1 && prev.length >= maxCols) {
+        return prev; // silently reject — Navbar shows alert
+      }
       return [username, ...prev];
     });
   };
@@ -43,9 +58,20 @@ export default function Home() {
     setActiveLives(prev => prev.filter(u => u !== username));
   };
 
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <span className="w-8 h-8 border-2 border-tiktok-cyan/30 border-t-tiktok-cyan rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-black text-white font-sans">
-      <Navbar onJoin={handleJoin} activeCount={activeLives.length} />
+      <Navbar
+        onJoin={handleJoin}
+        activeCount={activeLives.length}
+      />
 
       {/* Main Container */}
       <main className="flex-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto md:overflow-y-hidden bg-[#0a0a0a]">
@@ -67,6 +93,11 @@ export default function Home() {
                 <span className="text-2xl text-gray-400">+</span>
               </div>
               <p>Chưa có luồng Live nào. Hãy dán link và tham gia!</p>
+              {plan && plan.maxColumns !== -1 && (
+                <p className="text-xs text-gray-600">
+                  Gói <span style={{ color: plan.color }} className="font-bold">{plan.badge} {plan.label}</span>: tối đa {plan.maxColumns} luồng đồng thời.
+                </p>
+              )}
             </div>
           )}
         </div>
