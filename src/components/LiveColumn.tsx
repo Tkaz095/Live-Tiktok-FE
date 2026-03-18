@@ -90,7 +90,6 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   const [coins, setCoins] = useState(0);
   const [displayCoins, setDisplayCoins] = useState(0);
   const [isLiveEnded, setIsLiveEnded] = useState(false);
-  const [hasReceivedLike, setHasReceivedLike] = useState(false);
   const [hostNickname, setHostNickname] = useState(username);
   const [hostFollowers, setHostFollowers] = useState<number | null>(null);
   const [syncCount, setSyncCount] = useState(0);
@@ -223,10 +222,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       setIsConnectingTiktok(false);
       triggerSyncSync();
       if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
-      if (typeof data.likeCount === "number") {
-        setLikes(data.likeCount);
-        if (data.likeCount > 0) setHasReceivedLike(true);
-      }
+      if (typeof data.likeCount === "number") setLikes(data.likeCount);
       if (data.hostNickname) setHostNickname(data.hostNickname);
       if (typeof data.hostFollowers === "number") setHostFollowers(data.hostFollowers);
     });
@@ -251,7 +247,6 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
 
     socket.on("like", (data: LikeData) => {
       triggerSyncSync();
-      setHasReceivedLike(true);
       if (typeof data.totalLikeCount === "number" && data.totalLikeCount > 0) {
         setLikes(data.totalLikeCount);
       } else if (typeof data.likeCount === "number") {
@@ -385,7 +380,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
               </h3>
               <div className="w-2 h-2 rounded-full bg-tiktok-pink animate-pulse shrink-0" title="LIVE" />
             </div>
-            
+
             <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
               <span className="text-gray-400 truncate w-auto max-w-[120px]">@{username}</span>
               {hostFollowers !== null && (
@@ -488,9 +483,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
           ) : error ? (
             <span className="text-red-500 text-[10px] text-center px-1 font-medium">-</span>
           ) : connected ? (
-            <span className={`font-bold ${!hasReceivedLike && displayLikes === 0 ? "text-[11px] text-gray-500 italic mt-1" : "text-tiktok-pink text-lg"}`}>
-              {!hasReceivedLike && displayLikes === 0 ? "Đang chờ..." : formatNumber(displayLikes)}
-            </span>
+            <span className="text-tiktok-pink font-bold text-lg">{formatNumber(displayLikes)}</span>
           ) : (
             <div className="w-12 h-5 rounded-md bg-[#333] animate-pulse" />
           )}
@@ -538,8 +531,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     className={`bg-gradient-to-r ${g.isBigGift
-                        ? "from-tiktok-yellow/30 to-tiktok-pink/20 border-tiktok-yellow/50"
-                        : "from-tiktok-yellow/10 to-transparent border-tiktok-yellow/20"
+                      ? "from-tiktok-yellow/30 to-tiktok-pink/20 border-tiktok-yellow/50"
+                      : "from-tiktok-yellow/10 to-transparent border-tiktok-yellow/20"
                       } border rounded-lg p-2 flex items-center justify-between shadow-sm`}
                   >
                     <div className="flex items-center gap-2">
@@ -639,17 +632,14 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
-                      className={`group/chat relative text-[12px] leading-relaxed break-words py-0.5 rounded px-1 -mx-1 transition-colors hover:bg-white/5 ${
-                        c.user === "system" ? "text-center text-gray-400 italic" : ""
-                      } ${
-                        pinnedChat?.id === c.id ? "bg-tiktok-cyan/5 border-l-2 border-tiktok-cyan/50 pl-2" : ""
-                      }`}
+                      className={`group/chat relative text-[12px] leading-relaxed break-words py-0.5 rounded px-1 -mx-1 transition-colors hover:bg-white/5 ${c.user === "system" ? "text-center text-gray-400 italic" : ""
+                        } ${pinnedChat?.id === c.id ? "bg-tiktok-cyan/5 border-l-2 border-tiktok-cyan/50 pl-2" : ""
+                        }`}
                     >
                       {c.user !== "system" && (
                         <span
-                          className={`font-semibold mr-1.5 cursor-pointer hover:underline ${
-                            index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
-                          }`}
+                          className={`font-semibold mr-1.5 cursor-pointer hover:underline ${index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
+                            }`}
                         >
                           {c.user}:
                         </span>
@@ -662,11 +652,10 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                         <span className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover/chat:flex items-center gap-0.5 bg-[#1a1a1a] border border-[#333] rounded-md shadow-lg">
                           <button
                             onClick={() => togglePin(c)}
-                            className={`p-1 rounded-l-md transition-colors ${
-                              pinnedChat?.id === c.id
+                            className={`p-1 rounded-l-md transition-colors ${pinnedChat?.id === c.id
                                 ? "text-tiktok-cyan bg-tiktok-cyan/10"
                                 : "text-gray-400 hover:text-tiktok-cyan hover:bg-tiktok-cyan/10"
-                            }`}
+                              }`}
                             title={pinnedChat?.id === c.id ? "Bỏ ghim" : "Ghim tin nhắn"}
                           >
                             {pinnedChat?.id === c.id ? <PinOff size={10} /> : <Pin size={10} />}
