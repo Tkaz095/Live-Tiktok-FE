@@ -37,6 +37,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   const [filter, setFilter] = useState<"all" | "gift" | "chat">("all");
   const [showFilter, setShowFilter] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [isConnectingTiktok, setIsConnectingTiktok] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Real stats
   const [viewers, setViewers] = useState(0);
@@ -45,6 +47,12 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   const [coins, setCoins] = useState(0);
   const [displayCoins, setDisplayCoins] = useState(0);
   const [isLiveEnded, setIsLiveEnded] = useState(false);
+  const [syncCount, setSyncCount] = useState(0);
+
+  // Trigger brief sync flash
+  const triggerSyncSync = () => {
+    setSyncCount((c) => c + 1);
+  };
 
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [gifts, setGifts] = useState<GiftItem[]>([]);
@@ -87,6 +95,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
 
     socket.on("connect", () => {
       setConnected(true);
+      setIsConnectingTiktok(true);
+      setError(null);
       socket.emit("join", { room: `@${username}` });
     });
 
@@ -96,9 +106,26 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
 
     socket.on("connect_error", () => {
       setConnected(false);
+      setError("Mất kết nối tới server Backend.");
+    });
+
+    socket.on("error", (msg: string) => {
+      setError(msg);
+      setIsConnectingTiktok(false);
+    });
+
+    socket.on("chat_history", (historyData: any[]) => {
+      triggerSyncSync();
+      const mappedChats = historyData.map((data) => ({
+        id: data.id || Math.random().toString(36).substring(7),
+        user: data.user || data.username || "unknown",
+        message: data.message || "",
+      }));
+      setChats(mappedChats.slice(0, 100));
     });
 
     socket.on("chat", (data) => {
+      triggerSyncSync();
       const newChat: ChatItem = {
         id: Math.random().toString(36).substring(7),
         user: data.username ?? data.user ?? "unknown",
@@ -108,6 +135,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
     });
 
     socket.on("gift", (data) => {
+      triggerSyncSync();
       const count: number = data.count ?? 1;
       const coinVal: number =
         data.diamond_value ?? data.coin_value ?? data.value ?? 0;
@@ -132,15 +160,20 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
     });
 
     socket.on("room_info", (data) => {
+      setIsConnectingTiktok(false);
+      triggerSyncSync();
       if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
       if (typeof data.likeCount === "number") setLikes(data.likeCount);
     });
 
     socket.on("viewer_count", (data) => {
+      triggerSyncSync();
       if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
     });
 
     socket.on("live_stats", (data) => {
+      setIsConnectingTiktok(false);
+      triggerSyncSync();
       if (typeof data.followers === "number") setViewers(data.followers);
       if (typeof data.viewer_count === "number") setViewers(data.viewer_count);
       if (typeof data.likes === "number") setLikes(data.likes);
@@ -152,8 +185,22 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
     });
 
     socket.on("like", (data) => {
-      if (typeof data.totalLikeCount === "number") setLikes(data.totalLikeCount);
-      else if (typeof data.likeCount === "number") setLikes(data.likeCount);
+      triggerSyncSync();
+      if (typeof data.totalLikeCount === "number" && data.totalLikeCount > 0) {
+        setLikes(data.totalLikeCount);
+      } else if (typeof data.likeCount === "number") {
+        setLikes(prev => prev + data.likeCount);
+      }
+    });
+
+    socket.on("tiktok_error", (msg) => {
+      setError(msg);
+      setIsConnectingTiktok(false);
+    });
+
+    socket.on("tiktok_disconnected", (msg) => {
+      setError(msg);
+      setIsConnectingTiktok(false);
     });
 
     socket.on("stream_end", () => {
@@ -187,6 +234,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       socket.off("connect");
       socket.off("disconnect");
       socket.off("connect_error");
+      socket.off("error");
       socket.off("chat");
       socket.off("gift");
       socket.off("live_stats");
@@ -196,6 +244,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       socket.off("like");
       socket.off("stream_end");
       socket.off("live_end");
+      socket.off("tiktok_error");
+      socket.off("tiktok_disconnected");
       socket.disconnect();
       socketRef.current = null;
     };
@@ -205,7 +255,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   // Animate coins count-up
   useEffect(() => {
     const ctrl = animate(displayCoins, coins, {
-      duration: 1.2,
+      duration: 0.5,
       ease: "easeOut",
       onUpdate: (v) => setDisplayCoins(Math.round(v)),
     });
@@ -215,7 +265,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   // Animate likes count-up
   useEffect(() => {
     const ctrl = animate(displayLikes, likes, {
-      duration: 1.5,
+      duration: 0.5,
       ease: "easeOut",
       onUpdate: (v) => setDisplayLikes(Math.round(v)),
     });
@@ -276,11 +326,24 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                   <WifiOff size={10} className="text-red-500" />
                   <span className="text-red-500">phiên LIVE đã kết thúc</span>
                 </>
-              ) : connected ? (
+              ) : error ? (
                 <>
-                  <Wifi size={10} className="text-green-400" />
-                  <span className="text-green-400">LIVE • Đang kết nối</span>
+                  <WifiOff size={10} className="text-red-500" />
+                  <span className="text-red-500 truncate max-w-[150px]" title={error}>{error}</span>
                 </>
+              ) : connected ? (
+                <motion.div
+                  key={syncCount}
+                  initial={{ color: "#ffffff" }}
+                  animate={{ color: "#4ade80" }}
+                  transition={{ duration: 0.5 }}
+                  className="flex items-center gap-1.5"
+                >
+                  <Wifi size={10} />
+                  <span>
+                    {isConnectingTiktok ? "LIVE • Đang tải dữ liệu..." : "LIVE • Đã kết nối"}
+                  </span>
+                </motion.div>
               ) : (
                 <>
                   <WifiOff size={10} className="text-gray-500" />
@@ -305,7 +368,13 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
             <Users size={14} className="text-tiktok-cyan" />
             Người xem
           </div>
-          {connected ? (
+          {isConnectingTiktok ? (
+            <div className="flex flex-col items-center">
+              <span className="text-xs text-gray-500 animate-pulse mt-1">Đang tải...</span>
+            </div>
+          ) : error ? (
+            <span className="text-red-500 text-[10px] text-center px-1 font-medium">-</span>
+          ) : connected ? (
             <span className="text-tiktok-cyan font-bold text-lg">{formatNumber(viewers)}</span>
           ) : (
             <div className="w-12 h-5 rounded-md bg-[#333] animate-pulse" />
@@ -316,7 +385,13 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
             <Heart size={14} className="text-tiktok-pink" />
             Tim
           </div>
-          {connected ? (
+          {isConnectingTiktok ? (
+            <div className="flex flex-col items-center">
+              <span className="text-xs text-gray-500 animate-pulse mt-1">Đang tải...</span>
+            </div>
+          ) : error ? (
+            <span className="text-red-500 text-[10px] text-center px-1 font-medium">-</span>
+          ) : connected ? (
             <span className="text-tiktok-pink font-bold text-lg">{formatNumber(displayLikes)}</span>
           ) : (
             <div className="w-12 h-5 rounded-md bg-[#333] animate-pulse" />
@@ -342,11 +417,10 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className={`bg-gradient-to-r ${
-                      g.isBigGift
+                    className={`bg-gradient-to-r ${g.isBigGift
                         ? "from-tiktok-yellow/30 to-tiktok-pink/20 border-tiktok-yellow/50"
                         : "from-tiktok-yellow/10 to-transparent border-tiktok-yellow/20"
-                    } border rounded-lg p-2 flex items-center justify-between shadow-sm`}
+                      } border rounded-lg p-2 flex items-center justify-between shadow-sm`}
                   >
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-black/40 shrink-0 flex items-center justify-center text-lg">
@@ -393,9 +467,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
               </span>
               <button
                 onClick={() => setShowFilter(!showFilter)}
-                className={`p-1 hover:bg-white/10 rounded transition-colors ${
-                  showFilter ? "text-tiktok-cyan" : "text-gray-400"
-                }`}
+                className={`p-1 hover:bg-white/10 rounded transition-colors ${showFilter ? "text-tiktok-cyan" : "text-gray-400"
+                  }`}
               >
                 <Filter size={14} />
               </button>
@@ -412,9 +485,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                     <button
                       key={v}
                       onClick={() => { setFilter(v); setShowFilter(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 transition-colors ${
-                        filter === v ? "text-tiktok-cyan" : "text-gray-300"
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 transition-colors ${filter === v ? "text-tiktok-cyan" : "text-gray-300"
+                        }`}
                     >
                       {v === "all" ? "Tất cả" : v === "gift" ? "Chỉ xem quà" : "Chỉ xem tin nhắn"}
                     </button>
@@ -443,15 +515,13 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0 }}
-                    className={`text-[12px] leading-relaxed break-words py-0.5 ${
-                      c.user === "system" ? "text-center text-gray-400 italic" : ""
-                    }`}
+                    className={`text-[12px] leading-relaxed break-words py-0.5 ${c.user === "system" ? "text-center text-gray-400 italic" : ""
+                      }`}
                   >
                     {c.user !== "system" && (
                       <span
-                        className={`font-semibold mr-1.5 cursor-pointer hover:underline ${
-                          index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
-                        }`}
+                        className={`font-semibold mr-1.5 cursor-pointer hover:underline ${index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
+                          }`}
                       >
                         {c.user}:
                       </span>
