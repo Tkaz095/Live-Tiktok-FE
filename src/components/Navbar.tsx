@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -77,7 +78,13 @@ export default function Navbar({
       </div>
 
       {/* Right Stats */}
-      <div className="flex items-center justify-end gap-2 text-sm w-[250px] shrink-0">
+      <div className="flex items-center justify-end gap-3 text-sm w-[250px] shrink-0">
+        <Link
+          href="/login"
+          className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-medium text-white/85 transition hover:border-tiktok-cyan hover:text-tiktok-cyan"
+        >
+          Login
+        </Link>
         <div className="flex flex-col items-end">
           <span className="text-gray-400 text-xs">Đang theo dõi</span>
           <span className="text-tiktok-cyan font-bold text-xl leading-none">

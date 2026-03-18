@@ -8,22 +8,19 @@ import { AnimatePresence } from "framer-motion";
 const STORAGE_KEY = "followedUsers";
 
 export default function Home() {
-  const [activeLives, setActiveLives] = useState<string[]>([]);
+  const [activeLives, setActiveLives] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
 
-  // Load persisted list from localStorage on mount
-  useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed: string[] = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setActiveLives(parsed);
-        }
-      }
+      if (!stored) return [];
+
+      const parsed: string[] = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      // ignore JSON parse errors
+      return [];
     }
-  }, []);
+  });
 
   // Persist to localStorage whenever list changes
   useEffect(() => {

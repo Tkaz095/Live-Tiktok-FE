@@ -90,6 +90,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   const [coins, setCoins] = useState(0);
   const [displayCoins, setDisplayCoins] = useState(0);
   const [isLiveEnded, setIsLiveEnded] = useState(false);
+  const [hasReceivedLike, setHasReceivedLike] = useState(false);
   const [hostNickname, setHostNickname] = useState(username);
   const [hostFollowers, setHostFollowers] = useState<number | null>(null);
   const [syncCount, setSyncCount] = useState(0);
@@ -222,7 +223,10 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       setIsConnectingTiktok(false);
       triggerSyncSync();
       if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
-      if (typeof data.likeCount === "number") setLikes(data.likeCount);
+      if (typeof data.likeCount === "number") {
+        setLikes(data.likeCount);
+        if (data.likeCount > 0) setHasReceivedLike(true);
+      }
       if (data.hostNickname) setHostNickname(data.hostNickname);
       if (typeof data.hostFollowers === "number") setHostFollowers(data.hostFollowers);
     });
@@ -247,6 +251,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
 
     socket.on("like", (data: LikeData) => {
       triggerSyncSync();
+      setHasReceivedLike(true);
       if (typeof data.totalLikeCount === "number" && data.totalLikeCount > 0) {
         setLikes(data.totalLikeCount);
       } else if (typeof data.likeCount === "number") {
@@ -483,7 +488,9 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
           ) : error ? (
             <span className="text-red-500 text-[10px] text-center px-1 font-medium">-</span>
           ) : connected ? (
-            <span className="text-tiktok-pink font-bold text-lg">{formatNumber(displayLikes)}</span>
+            <span className={`font-bold ${!hasReceivedLike && displayLikes === 0 ? "text-[11px] text-gray-500 italic mt-1" : "text-tiktok-pink text-lg"}`}>
+              {!hasReceivedLike && displayLikes === 0 ? "Đang chờ..." : formatNumber(displayLikes)}
+            </span>
           ) : (
             <div className="w-12 h-5 rounded-md bg-[#333] animate-pulse" />
           )}
