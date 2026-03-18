@@ -131,6 +131,15 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       if (isBigGift) triggerBigGift(icon, giftName);
     });
 
+    socket.on("room_info", (data) => {
+      if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
+      if (typeof data.likeCount === "number") setLikes(data.likeCount);
+    });
+
+    socket.on("viewer_count", (data) => {
+      if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
+    });
+
     socket.on("live_stats", (data) => {
       if (typeof data.followers === "number") setViewers(data.followers);
       if (typeof data.viewer_count === "number") setViewers(data.viewer_count);
@@ -143,8 +152,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
     });
 
     socket.on("like", (data) => {
-      if (typeof data.likeCount === "number") setLikes(data.likeCount);
-      else if (typeof data.totalLikeCount === "number") setLikes(data.totalLikeCount);
+      if (typeof data.totalLikeCount === "number") setLikes(data.totalLikeCount);
+      else if (typeof data.likeCount === "number") setLikes(data.likeCount);
     });
 
     socket.on("stream_end", () => {
@@ -181,6 +190,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       socket.off("chat");
       socket.off("gift");
       socket.off("live_stats");
+      socket.off("room_info");
+      socket.off("viewer_count");
       socket.off("memberCount");
       socket.off("like");
       socket.off("stream_end");
