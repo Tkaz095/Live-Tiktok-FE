@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Users, Heart, Coins, Gift, MessageSquare, X, Filter, Wifi, WifiOff } from "lucide-react";
+import { Users, Heart, Coins, Gift, MessageSquare, X, Filter, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence, useAnimation, animate } from "framer-motion";
 import { createLiveSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
@@ -35,7 +35,6 @@ function getAvatar(username: string) {
 
 export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   const [filter, setFilter] = useState<"all" | "gift" | "chat">("all");
-  const [showFilter, setShowFilter] = useState(false);
   const [connected, setConnected] = useState(false);
   const [isConnectingTiktok, setIsConnectingTiktok] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +46,10 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
   const [coins, setCoins] = useState(0);
   const [displayCoins, setDisplayCoins] = useState(0);
   const [isLiveEnded, setIsLiveEnded] = useState(false);
+  const [hostNickname, setHostNickname] = useState(username);
+  const [hostFollowers, setHostFollowers] = useState<number | null>(null);
   const [syncCount, setSyncCount] = useState(0);
+  const [reconnectKey, setReconnectKey] = useState(0);
 
   // Trigger brief sync flash
   const triggerSyncSync = () => {
@@ -127,11 +129,14 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
     socket.on("chat", (data) => {
       triggerSyncSync();
       const newChat: ChatItem = {
-        id: Math.random().toString(36).substring(7),
+        id: data.id || Math.random().toString(36).substring(7),
         user: data.username ?? data.user ?? "unknown",
         message: data.message ?? "",
       };
-      setChats((prev) => [newChat, ...prev].slice(0, 100));
+      setChats((prev) => {
+        if (prev.some(c => c.id === newChat.id)) return prev;
+        return [newChat, ...prev].slice(0, 100);
+      });
     });
 
     socket.on("gift", (data) => {
@@ -164,6 +169,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       triggerSyncSync();
       if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
       if (typeof data.likeCount === "number") setLikes(data.likeCount);
+      if (data.hostNickname) setHostNickname(data.hostNickname);
+      if (typeof data.hostFollowers === "number") setHostFollowers(data.hostFollowers);
     });
 
     socket.on("viewer_count", (data) => {
@@ -246,11 +253,12 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       socket.off("live_end");
       socket.off("tiktok_error");
       socket.off("tiktok_disconnected");
+      socket.off("chat_history");
       socket.disconnect();
       socketRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username]);
+  }, [username, reconnectKey]);
 
   // Animate coins count-up
   useEffect(() => {
@@ -310,12 +318,25 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
               className="w-full h-full rounded-full border-2 border-tiktok-card object-cover bg-[#111]"
             />
           </div>
-          <div>
-            <h3 className="font-bold text-base flex items-center gap-2">
-              @{username}
-              <span className="w-2 h-2 rounded-full bg-tiktok-pink animate-pulse" title="LIVE" />
-            </h3>
-            <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1.5">
+              <h3 className="font-bold text-base truncate flex items-center gap-2" title={hostNickname}>
+                {hostNickname} {isLiveEnded && <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded ml-1">OFFLINE</span>}
+              </h3>
+              <div className="w-2 h-2 rounded-full bg-tiktok-pink animate-pulse shrink-0" title="LIVE" />
+            </div>
+            
+            <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
+              <span className="text-gray-400 truncate w-auto max-w-[120px]">@{username}</span>
+              {hostFollowers !== null && (
+                <>
+                  <span className="text-gray-600">•</span>
+                  <span className="text-gray-400 whitespace-nowrap">{formatNumber(hostFollowers)} Follower</span>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-0.5">
               <Coins size={12} className="text-tiktok-yellow" />
               <span>Tổng xu:</span>
               <span className="text-tiktok-yellow font-medium">{formatNumber(displayCoins)}</span>
@@ -353,12 +374,27 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
             </div>
           </div>
         </div>
-        <button
-          onClick={() => onClose(username)}
-          className="text-gray-500 hover:text-white p-1 rounded-md transition-colors opacity-0 group-hover:opacity-100 absolute top-4 right-4"
-        >
-          <X size={18} />
-        </button>
+        <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => {
+              setConnected(false);
+              setError(null);
+              setIsConnectingTiktok(true);
+              setReconnectKey(k => k + 1);
+            }}
+            className="text-gray-500 hover:text-white p-1 rounded-md transition-colors"
+            title="Tải lại kết nối"
+          >
+            <RefreshCw size={16} />
+          </button>
+          <button
+            onClick={() => onClose(username)}
+            className="text-gray-500 hover:text-white p-1 rounded-md transition-colors"
+            title="Đóng thẻ"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Stats Bar — skeleton while not connected */}
@@ -399,11 +435,33 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
         </div>
       </div>
 
+      {/* Tabs Bar */}
+      <div className="flex border-b border-tiktok-border/60 bg-[#121212] shrink-0 text-xs mt-1">
+        <button
+          onClick={() => setFilter("all")}
+          className={`flex-1 py-2 text-center transition-colors border-b-2 ${filter === "all" ? "border-tiktok-cyan text-tiktok-cyan font-bold bg-white/5" : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}
+        >
+          Tất cả
+        </button>
+        <button
+          onClick={() => setFilter("chat")}
+          className={`flex-1 py-2 text-center transition-colors border-b-2 ${filter === "chat" ? "border-tiktok-cyan text-tiktok-cyan font-bold bg-white/5" : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}
+        >
+          Chat
+        </button>
+        <button
+          onClick={() => setFilter("gift")}
+          className={`flex-1 py-2 text-center transition-colors border-b-2 ${filter === "gift" ? "border-tiktok-cyan text-tiktok-cyan font-bold bg-white/5" : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}
+        >
+          Quà tặng
+        </button>
+      </div>
+
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative z-10">
         {/* Gifts Section */}
         {(filter === "all" || filter === "gift") && (
-          <div className="flex-none max-h-[40%] min-h-[120px] flex flex-col border-b border-tiktok-border bg-gradient-to-b from-[#1a1515] to-transparent">
+          <div className={`flex flex-col border-b border-tiktok-border bg-gradient-to-b from-[#1a1515] to-transparent ${filter === "gift" ? "flex-1" : "flex-none max-h-[40%] min-h-[120px]"}`}>
             <div className="px-3 py-2 flex items-center text-xs font-semibold text-tiktok-yellow/80 bg-black/20 shrink-0 gap-1.5">
               <Gift size={14} />
               Thông báo quà tặng
@@ -449,92 +507,68 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
           </div>
         )}
 
-        {/* Divider */}
-        <div className="h-1 bg-[#222] flex items-center justify-center shrink-0">
-          <div className="w-8 h-[2px] bg-gray-600 rounded-full" />
-        </div>
+        {(filter === "all" || filter === "chat") && (
+          <>
+            {/* Divider (only show if both are visible) */}
+            {filter === "all" && (
+              <div className="h-1 bg-[#222] flex items-center justify-center shrink-0">
+                <div className="w-8 h-[2px] bg-gray-600 rounded-full" />
+              </div>
+            )}
 
-        {/* Chat Section */}
-        <div className={`flex flex-col min-h-0 bg-[#0c0c0c] ${filter === "gift" ? "h-auto" : "flex-1"}`}>
-          <div className="px-3 py-2 flex items-center justify-between text-xs font-semibold text-tiktok-cyan/80 bg-black/40 relative shrink-0">
-            <div className="flex items-center gap-1.5">
-              <MessageSquare size={14} />
-              Chat trực tiếp
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-gray-500 font-normal">
-                {filter === "gift" ? "Đã đóng" : `${chats.length} tin`}
-              </span>
-              <button
-                onClick={() => setShowFilter(!showFilter)}
-                className={`p-1 hover:bg-white/10 rounded transition-colors ${showFilter ? "text-tiktok-cyan" : "text-gray-400"
-                  }`}
-              >
-                <Filter size={14} />
-              </button>
-            </div>
-            <AnimatePresence>
-              {showFilter && (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  className="absolute right-2 top-8 w-36 bg-[#2a2a2a] border border-[#444] rounded-lg shadow-xl overflow-hidden z-20"
-                >
-                  {(["all", "gift", "chat"] as const).map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => { setFilter(v); setShowFilter(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 transition-colors ${filter === v ? "text-tiktok-cyan" : "text-gray-300"
+            {/* Chat Section */}
+            <div className="flex flex-col flex-1 min-h-0 bg-[#0c0c0c]">
+              <div className="px-3 py-2 flex items-center justify-between text-xs font-semibold text-tiktok-cyan/80 bg-black/40 relative shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <MessageSquare size={14} />
+                  Chat trực tiếp
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500 font-normal">
+                    {chats.length} tin
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col-reverse gap-2">
+                {/* Skeleton loading while not connected */}
+                {!connected && chats.length === 0 && (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <div className={`h-3 rounded bg-[#2a2a2a] animate-pulse`} style={{ width: `${40 + i * 10}%` }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <AnimatePresence>
+                  {chats.map((c, index) => (
+                    <motion.div
+                      key={c.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0 }}
+                      className={`text-[12px] leading-relaxed break-words py-0.5 ${c.user === "system" ? "text-center text-gray-400 italic" : ""
                         }`}
                     >
-                      {v === "all" ? "Tất cả" : v === "gift" ? "Chỉ xem quà" : "Chỉ xem tin nhắn"}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {(filter === "all" || filter === "chat") && (
-            <div className="flex-1 overflow-y-auto p-3 flex flex-col-reverse gap-2">
-              {/* Skeleton loading while not connected */}
-              {!connected && chats.length === 0 && (
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex gap-2 items-start">
-                      <div className={`h-3 rounded bg-[#2a2a2a] animate-pulse`} style={{ width: `${40 + i * 10}%` }} />
-                    </div>
-                  ))}
-                </div>
-              )}
-              <AnimatePresence>
-                {chats.map((c, index) => (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0 }}
-                    className={`text-[12px] leading-relaxed break-words py-0.5 ${c.user === "system" ? "text-center text-gray-400 italic" : ""
-                      }`}
-                  >
-                    {c.user !== "system" && (
-                      <span
-                        className={`font-semibold mr-1.5 cursor-pointer hover:underline ${index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
-                          }`}
-                      >
-                        {c.user}:
+                      {c.user !== "system" && (
+                        <span
+                          className={`font-semibold mr-1.5 cursor-pointer hover:underline ${index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
+                            }`}
+                        >
+                          {c.user}:
+                        </span>
+                      )}
+                      <span className={c.user === "system" ? "text-tiktok-yellow/80" : "text-gray-200"}>
+                        {c.message}
                       </span>
-                    )}
-                    <span className={c.user === "system" ? "text-tiktok-yellow/80" : "text-gray-200"}>
-                      {c.message}
-                    </span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </motion.div>
   );
