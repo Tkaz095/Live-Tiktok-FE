@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, LogOut, Zap, Crown } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
+import { SUBSCRIPTION_PLANS } from "@/lib/auth";
 
 export default function Navbar({
   onJoin,
@@ -11,30 +15,35 @@ export default function Navbar({
   onJoin?: (username: string) => void;
   activeCount?: number;
 }) {
+  const router = useRouter();
+  const { user, plan, logout } = useAuth();
   const [url, setUrl] = useState("");
+  const [limitHit, setLimitHit] = useState(false);
 
   const handleJoin = () => {
     const trimmed = url.trim();
     if (!trimmed) return;
 
-    let username = "";
+    // Enforce column limit
+    if (plan && plan.maxColumns !== -1 && activeCount >= plan.maxColumns) {
+      setLimitHit(true);
+      setTimeout(() => setLimitHit(false), 3000);
+      return;
+    }
 
-    // Match tiktok.com/@username or tiktok.com/@username/live
+    let username = "";
     const match = trimmed.match(/tiktok\.com\/@([a-zA-Z0-9_.]+)/);
     if (match && match[1]) {
       username = match[1];
     } else if (trimmed.startsWith("@")) {
-      // Direct @username input
       username = trimmed.slice(1);
     } else {
-      // Plain username input
       username = trimmed;
     }
 
     if (onJoin && username) {
       onJoin(username);
     }
-
     setUrl("");
   };
 
@@ -42,10 +51,17 @@ export default function Navbar({
     if (e.key === "Enter") handleJoin();
   };
 
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  const PlanIcon = plan?.tier === "pro" ? Crown : plan?.tier === "plus" ? Zap : null;
+
   return (
     <header className="h-[70px] border-b border-tiktok-border bg-tiktok-dark flex items-center justify-between px-6 shrink-0 z-10 w-full relative">
       {/* Brand */}
-      <div className="flex items-center gap-3 w-[250px] shrink-0">
+      <div className="flex items-center gap-3 w-[220px] shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-tiktok-cyan to-tiktok-pink flex items-center justify-center text-white font-bold text-sm shadow-[0_0_10px_rgba(37,244,238,0.2)]">
           TT
         </div>
@@ -55,7 +71,7 @@ export default function Navbar({
       </div>
 
       {/* Center Input Form */}
-      <div className="flex items-center justify-center flex-1 max-w-3xl px-8">
+      <div className="flex flex-col items-center justify-center flex-1 max-w-3xl px-8 gap-1">
         <div className="flex items-center gap-3 w-full">
           <div className="relative w-full flex-1 group">
             <input
@@ -75,22 +91,71 @@ export default function Navbar({
             Tham gia
           </button>
         </div>
+        <AnimatePresence>
+          {limitHit && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-xs text-tiktok-yellow"
+            >
+              ⚠️ Gói {plan?.label} chỉ hỗ trợ tối đa {plan?.maxColumns} luồng. <a href="/register" className="underline">Nâng cấp</a> để xem nhiều hơn.
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Right Stats */}
-      <div className="flex items-center justify-end gap-3 text-sm w-[250px] shrink-0">
+      {/* <div className="flex items-center justify-end gap-3 text-sm w-[250px] shrink-0">
         <Link
           href="/login"
           className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-medium text-white/85 transition hover:border-tiktok-cyan hover:text-tiktok-cyan"
         >
           Login
-        </Link>
+        </Link> */}
+      {/* Right — User Info */}
+      <div className="flex items-center gap-3 w-[220px] shrink-0 justify-end">
+        {/* Column counter */}
         <div className="flex flex-col items-end">
-          <span className="text-gray-400 text-xs">Đang theo dõi</span>
+          <span className="text-gray-400 text-[10px]">Đang theo dõi</span>
           <span className="text-tiktok-cyan font-bold text-xl leading-none">
             {activeCount}
           </span>
         </div>
+
+        {/* Subscription Badge */}
+        {plan && (
+          <div
+            className="flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-bold shrink-0"
+            style={{
+              color: plan.color,
+              borderColor: `${plan.color}50`,
+              backgroundColor: `${plan.color}15`,
+            }}
+          >
+            {PlanIcon && <PlanIcon size={11} />}
+            {plan.badge} {plan.label}
+          </div>
+        )}
+
+        {/* User Avatar + Logout */}
+        {user && (
+          <div className="flex items-center gap-2">
+            <img
+              src={user.avatar}
+              alt={user.name}
+              title={user.name}
+              className="w-8 h-8 rounded-full border border-[#333] shrink-0"
+            />
+            <button
+              onClick={handleLogout}
+              title="Đăng xuất"
+              className="text-gray-500 hover:text-tiktok-pink transition-colors p-1 rounded-md"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

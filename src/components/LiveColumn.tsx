@@ -52,6 +52,7 @@ interface TikTokGiftData {
   diamond_value?: number;
   coin_value?: number;
   value?: number;
+  totalCoins?: number; // Đồng bộ từ backend
 }
 
 interface RoomInfoData {
@@ -153,7 +154,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       setConnected(true);
       setIsConnectingTiktok(true);
       setError(null);
-      socket.emit("join", { room: `@${username}` });
+      socket.emit("join", { room: username });
     });
 
     socket.on("disconnect", () => {
@@ -214,7 +215,14 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       };
 
       setGifts((prev) => [newGift, ...prev].slice(0, 30));
-      setCoins((prev) => prev + totalValue);
+      
+      // Ưu tiên dùng tổng xu từ backend để đảm bảo chính xác tuyệt đối
+      if (typeof data.totalCoins === "number") {
+        setCoins(data.totalCoins);
+      } else {
+        setCoins((prev) => prev + totalValue);
+      }
+
       if (isBigGift) triggerBigGift(icon, giftName);
     });
 
@@ -353,9 +361,13 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
             animate={bigGiftIconControls}
             className="absolute inset-x-0 top-1/3 pointer-events-none flex flex-col items-center justify-center z-50 drop-shadow-2xl"
           >
-            <span className="text-8xl filter drop-shadow-[0_0_20px_rgba(252,225,75,0.8)]">
-              {currentBigGift.icon}
-            </span>
+            <div className="w-32 h-32 flex items-center justify-center filter drop-shadow-[0_0_20px_rgba(252,225,75,0.8)]">
+              {currentBigGift.icon.startsWith("http") ? (
+                <img src={currentBigGift.icon} alt={currentBigGift.name} className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-8xl">{currentBigGift.icon}</span>
+              )}
+            </div>
             <span className="mt-2 text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-tiktok-yellow to-tiktok-pink uppercase tracking-widest drop-shadow-md">
               {currentBigGift.name} x1
             </span>
@@ -536,12 +548,16 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
                       } border rounded-lg p-2 flex items-center justify-between shadow-sm`}
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-black/40 shrink-0 flex items-center justify-center text-lg">
-                        {g.icon}
+                      <div className="w-8 h-8 rounded-full bg-black/40 shrink-0 flex items-center justify-center text-lg overflow-hidden border border-white/5">
+                        {g.icon.startsWith("http") ? (
+                          <img src={g.icon} alt={g.giftName} className="w-full h-full object-contain p-0.5" />
+                        ) : (
+                          g.icon
+                        )}
                       </div>
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-xs font-medium text-white max-w-[120px] truncate">{g.user}</span>
-                        <span className="text-[10px] text-tiktok-yellow">Đã tặng {g.giftName}</span>
+                      <div className="flex flex-col leading-tight min-w-0">
+                        <span className="text-xs font-bold text-white max-w-[140px] truncate">{g.user}</span>
+                        <span className="text-[10px] text-tiktok-yellow truncate max-w-[140px]">Đã tặng {g.giftName}</span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-0.5">
