@@ -3,18 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { register } from "@/lib/auth";
-import { SUBSCRIPTION_PLANS, SubscriptionTier } from "@/lib/auth";
 import { CheckCircle2, UserPlus } from "lucide-react";
-
-const PLAN_ORDER: SubscriptionTier[] = ["free", "plus", "pro"];
+import { API_BASE } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedTier, setSelectedTier] = useState<SubscriptionTier>("free");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -27,13 +24,31 @@ export default function RegisterPage() {
       return;
     }
     setLoading(true);
-    const result = register(name, email, password, selectedTier);
-    setLoading(false);
-    if (!result.success) {
-      setError(result.error ?? "Đăng ký thất bại.");
-    } else {
-      setSuccess(true);
-      setTimeout(() => router.push("/login"), 1800);
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          full_name: fullName || undefined,
+          role_id: 2 // customer
+        })
+      });
+      const data = await res.json();
+      setLoading(false);
+
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => router.push("/login"), 1800);
+      } else {
+        setError(data.error ?? "Đăng ký thất bại.");
+      }
+    } catch (err) {
+      setLoading(false);
+      setError("Lỗi kết nối máy chủ.");
     }
   };
 
@@ -76,55 +91,24 @@ export default function RegisterPage() {
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Plan Selection */}
               <div>
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 block">Chọn gói</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {PLAN_ORDER.map((tier) => {
-                    const plan = SUBSCRIPTION_PLANS[tier];
-                    const isSelected = selectedTier === tier;
-                    return (
-                      <button
-                        key={tier}
-                        type="button"
-                        onClick={() => setSelectedTier(tier)}
-                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all ${
-                          isSelected
-                            ? "border-current bg-current/10"
-                            : "border-[#2a2a2a] hover:border-[#3a3a3a] bg-transparent"
-                        }`}
-                        style={isSelected ? { borderColor: plan.color, backgroundColor: `${plan.color}15`, color: plan.color } : { color: "#6b7280" }}
-                      >
-                        <span className="text-xl">{plan.badge || "🆓"}</span>
-                        <span className="text-xs font-bold">{plan.label}</span>
-                        <span className="text-[10px] opacity-70">
-                          {plan.maxColumns === -1 ? "Unlimited" : `${plan.maxColumns} luồng`}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mt-2 bg-[#1a1a1a] rounded-xl p-3">
-                  <p className="text-xs text-gray-400 font-semibold mb-1.5">Tính năng bao gồm:</p>
-                  <ul className="space-y-1">
-                    {SUBSCRIPTION_PLANS[selectedTier].features.map((f) => (
-                      <li key={f} className="text-xs text-gray-300 flex items-center gap-1.5">
-                        <CheckCircle2 size={10} className="text-tiktok-cyan shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 block">Tên đăng nhập</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  placeholder="username"
+                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-tiktok-cyan transition-colors"
+                />
               </div>
-
               <div>
                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 block">Họ tên</label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="Nguyễn Văn A"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nguyễn Văn A (tuỳ chọn)"
                   className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-tiktok-cyan transition-colors"
                 />
               </div>
