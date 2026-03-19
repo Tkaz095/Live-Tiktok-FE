@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { FormEvent, useState } from "react";
 
@@ -12,16 +13,35 @@ export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const router = useRouter();
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNotice(null);
     setIsSubmitting(true);
 
-    // Demo only: UI state for login flow before API integration.
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    setIsSubmitting(false);
-    setNotice("Đăng nhập demo thành công. Có thể gắn API thật vào hàm handleSubmit.");
+    try {
+        const res = await fetch("http://localhost:4000/api/v1/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: email, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("api_key", data.api_key);
+            localStorage.setItem("username", data.user.username);
+            localStorage.setItem("package", data.user.package_type);
+            router.push("/");
+        } else {
+            setNotice(data.error || "Sai tài khoản hoặc mật khẩu");
+        }
+    } catch (err) {
+        setNotice("Mất kết nối tới máy chủ Backend");
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   return (
@@ -33,13 +53,13 @@ export default function LoginForm() {
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <label className="block space-y-2">
-          <span className="text-sm font-medium text-white/85">Email</span>
+          <span className="text-sm font-medium text-white/85">Tên Đăng Nhập / Email</span>
           <input
             required
-            type="email"
+            type="text"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@company.com"
+            placeholder="dien_ten_dang_nhap_vao_day"
             className="w-full rounded-2xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-tiktok-cyan"
           />
         </label>
@@ -88,8 +108,17 @@ export default function LoginForm() {
           className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-tiktok-pink px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#e0264c] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? <LoaderCircle size={17} className="animate-spin" /> : null}
-          {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isSubmitting ? "Đang xử lý..." : "Đăng nhập"}
         </button>
+
+        <div className="flex items-center justify-between gap-3 pt-2">
+           <button type="button" onClick={() => { setEmail("admin"); setPassword("12345"); }} className="w-full rounded-xl border border-tiktok-cyan/30 bg-tiktok-cyan/10 py-2 text-xs font-semibold text-tiktok-cyan transition hover:bg-tiktok-cyan hover:text-black">
+              Điền nhanh Admin
+           </button>
+           <button type="button" onClick={() => { setEmail("user"); setPassword("12345"); }} className="w-full rounded-xl border border-tiktok-pink/30 bg-tiktok-pink/10 py-2 text-xs font-semibold text-tiktok-pink transition hover:bg-tiktok-pink hover:text-white">
+              Điền nhanh User
+           </button>
+        </div>
       </form>
 
       {notice ? (

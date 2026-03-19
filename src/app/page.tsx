@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import LiveColumn from "@/components/LiveColumn";
 import { AnimatePresence } from "framer-motion";
@@ -8,6 +9,17 @@ import { AnimatePresence } from "framer-motion";
 const STORAGE_KEY = "followedUsers";
 
 export default function Home() {
+  const router = useRouter();
+
+  // Authentication Guard
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const apiKey = localStorage.getItem('api_key');
+    if (!token && !apiKey) {
+      router.push('/login');
+    }
+  }, [router]);
+
   const [activeLives, setActiveLives] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
 
