@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, login as authLogin, SUBSCRIPTION_PLANS, SubscriptionInfo } from "./auth";
+import { User, SUBSCRIPTION_PLANS, SubscriptionInfo, API_BASE } from "./auth";
 
 const STORAGE_KEY = "tiktok_monitor_user";
 
@@ -9,7 +9,7 @@ interface AuthContextValue {
   user: User | null;
   plan: SubscriptionInfo | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; error?: string; role_id?: number }>;
   logout: () => void;
 }
 
@@ -29,17 +29,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const result = authLogin(email, password);
-    if (!result) return { success: false, error: "Sai email hoặc mật khẩu." };
-    setUser(result);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-    return { success: true };
+  const login = async (usernameOrEmail: string, password: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: usernameOrEmail, password })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        const role_id = data.user.role_id;
+        const mappedUser: User = {
+          id: data.user.id.toString(),
+          name: data.user.full_name || data.user.username,
+          email: data.user.email,
+          avatar: `https://api.dicebear.com/8.x/thumbs/svg?seed=${data.user.username}&backgroundColor=0d1117`,
+          role_id,
+          subscription: role_id === 1 ? 'pro' : 'free'
+        };
+        setUser(mappedUser);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
+        localStorage.setItem("token", data.token);
+        return { success: true, role_id };
+      }
+      return { success: false, error: data.error || "Sai tài khoản hoặc mật khẩu." };
+    } catch (err) {
+      return { success: false, error: "Lỗi kết nối máy chủ." };
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("token");
   };
 
   const plan = user ? SUBSCRIPTION_PLANS[user.subscription] : null;

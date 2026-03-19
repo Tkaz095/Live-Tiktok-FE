@@ -23,6 +23,12 @@ export default function Navbar({
     const trimmed = url.trim();
     if (!trimmed) return;
 
+    // Check if logged in
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
     // Enforce column limit
     if (plan && plan.maxColumns !== -1 && activeCount >= plan.maxColumns) {
       setLimitHit(true);
