@@ -25,11 +25,10 @@ export default function Home() {
     }
   });
 
-  // Auth guard
+  // Auth guard - guests can view but not use
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login");
-    }
+    // We allow guests to stay on the page now.
+    // Redirection happens in Navbar actions if not logged in.
   }, [user, isLoading, router]);
 
   // Persist list
@@ -54,7 +53,7 @@ export default function Home() {
     setActiveLives(prev => prev.filter(u => u !== username));
   };
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <span className="w-8 h-8 border-2 border-tiktok-cyan/30 border-t-tiktok-cyan rounded-full animate-spin" />

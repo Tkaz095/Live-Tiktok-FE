@@ -14,9 +14,9 @@ export default function LoginPage() {
         <div className="w-full max-w-xl space-y-7">
           <Link
             href="/"
-            className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm text-white/75 transition hover:border-tiktok-cyan/60 hover:text-tiktok-cyan"
+            className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/75 transition-all hover:border-tiktok-cyan/60 hover:text-tiktok-cyan hover:bg-tiktok-cyan/5"
           >
-            ← Quay về dashboard
+            <span className="transition-transform group-hover:-translate-x-1">←</span> Quay về dashboard
           </Link>
 
           <div className="space-y-4">
