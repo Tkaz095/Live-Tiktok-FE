@@ -7,24 +7,23 @@ import Sidebar from "@/components/Sidebar";
 import LiveColumn from "@/components/LiveColumn";
 import { AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/lib/auth";
 
-const STORAGE_KEY = "followedUsers";
+interface ActiveStream {
+  id: number;
+  tiktoker_id: number;
+  tiktok_url: string;
+  tiktok_handle: string;
+  status: string;
+}
 
 export default function CustomerPage() {
   const router = useRouter();
-  const { user, plan, isLoading } = useAuth();
+  const { user, plan, isLoading, getToken } = useAuth();
   const mainRef = useRef<HTMLDivElement>(null);
-  const [activeLives, setActiveLives] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return [];
-      const parsed: string[] = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
+  
+  const [activeStreams, setActiveStreams] = useState<ActiveStream[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Auth guard — only customers (role_id=2) can access
   useEffect(() => {
@@ -33,37 +32,125 @@ export default function CustomerPage() {
         router.push("/login");
       } else if (user.role_id === 1) {
         router.push("/admin");
+      } else {
+        fetchActiveStreams();
       }
     }
   }, [user, isLoading, router]);
 
-  // Persist list
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(activeLives));
-  }, [activeLives]);
-
-  const handleJoin = (username: string) => {
-    if (!username || !plan) return;
-    setActiveLives(prev => {
-      if (prev.includes(username)) return prev;
-      const maxCols = plan.maxColumns;
-      if (maxCols !== -1 && prev.length >= maxCols) {
-        return prev;
+  const fetchActiveStreams = async () => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/streams/active`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActiveStreams(data.streams);
       }
-      return [username, ...prev];
-    });
+    } catch (err) {
+      console.error("Fetch streams error:", err);
+    }
   };
 
-  const handleClose = (username: string) => {
-    setActiveLives(prev => prev.filter(u => u !== username));
+  const handleJoin = async (username: string) => {
+    if (!username) return;
+    setError(null);
+
+    try {
+      const token = getToken();
+      
+      // 1. First, check/add to tiktokers list to get tiktoker_id
+      // For simplicity, we fetch the list to check if exists, otherwise create
+      const tiktokersRes = await fetch(`${API_BASE}/tiktokers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const tiktokersData = await tiktokersRes.json();
+      
+      let tiktoker = tiktokersData.data?.find((t: any) => t.tiktok_handle === username);
+      
+      if (!tiktoker) {
+        const createRes = await fetch(`${API_BASE}/tiktokers`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ tiktok_handle: username })
+        });
+        const createData = await createRes.json();
+        if (createData.success) tiktoker = createData.data;
+        else throw new Error(createData.error || "Không thể thêm TikToker");
+      }
+
+      // 2. Connect stream
+      const connectRes = await fetch(`${API_BASE}/streams/connect`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          tiktoker_id: tiktoker.id,
+          tiktok_url: `https://www.tiktok.com/@${username}/live`
+        })
+      });
+      
+      const connectData = await connectRes.json();
+      
+      if (connectRes.status === 403) {
+        setError(connectData.error);
+        return;
+      }
+
+      if (connectData.success) {
+        // Refresh active streams
+        fetchActiveStreams();
+      } else {
+        setError(connectData.error);
+      }
+    } catch (err: any) {
+      setError(err.message || "Lỗi kết nối");
+    }
+  };
+
+  const handleClose = async (tiktoker_id_or_handle: string | number) => {
+    // Determine the session ID to close
+    const session = activeStreams.find(s => 
+      s.tiktoker_id === tiktoker_id_or_handle || s.tiktok_handle === tiktoker_id_or_handle
+    );
+    
+    if (!session) {
+      // Just filter out from UI if not found on backend (fallback)
+      setActiveStreams(prev => prev.filter(s => s.tiktok_handle !== tiktoker_id_or_handle));
+      return;
+    }
+
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/streams/${session.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActiveStreams(prev => prev.filter(s => s.id !== session.id));
+      }
+    } catch (err) {
+      console.error("Disconnect error:", err);
+    }
   };
 
   const handleSidebarSelect = (username: string) => {
-    // Scroll to the selected live column
-    if (mainRef.current) {
-      const el = mainRef.current.querySelector(`[data-username="${username}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    const isAlreadyOpen = activeStreams.some(s => s.tiktok_handle === username);
+    if (!isAlreadyOpen) {
+      handleJoin(username);
+    } else {
+      if (mainRef.current) {
+        const el = mainRef.current.querySelector(`[data-username="${username}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        }
       }
     }
   };
@@ -80,31 +167,46 @@ export default function CustomerPage() {
     <div className="flex flex-col h-screen w-full overflow-hidden bg-black text-white font-sans">
       <Navbar
         onJoin={handleJoin}
-        activeCount={activeLives.length}
+        activeCount={activeStreams.length}
       />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <Sidebar
-          activeLives={activeLives}
+          activeUsernames={activeStreams.map(s => s.tiktok_handle)}
           onSelect={handleSidebarSelect}
-          onRemove={handleClose}
         />
 
         {/* Main content */}
-        <main ref={mainRef} className="flex-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto md:overflow-y-hidden bg-[#0a0a0a]">
+        <main ref={mainRef} className="flex-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto md:overflow-y-hidden bg-[#0a0a0a] relative">
+          
+          {/* Error Toast */}
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-tiktok-pink/20 border border-tiktok-pink/50 text-tiktok-pink px-4 py-2 rounded-full text-sm font-bold shadow-lg"
+              >
+                {error}
+                <button onClick={() => setError(null)} className="ml-3 hover:text-white">✕</button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="h-full p-4 flex flex-col md:flex-row gap-4 md:min-w-max items-center md:items-start">
             <AnimatePresence mode="popLayout">
-              {activeLives.map((username) => (
+              {activeStreams.map((stream) => (
                 <LiveColumn
-                  key={username}
-                  username={username}
-                  onClose={handleClose}
+                  key={stream.id}
+                  username={stream.tiktok_handle}
+                  onClose={() => handleClose(stream.id)}
                 />
               ))}
             </AnimatePresence>
 
-            {activeLives.length === 0 && (
+            {activeStreams.length === 0 && (
               <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-4 mt-20">
                 <div className="w-16 h-16 rounded-full bg-[#111] flex items-center justify-center border border-[#333]">
                   <span className="text-2xl text-gray-400">+</span>

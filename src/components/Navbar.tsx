@@ -100,7 +100,7 @@ export default function Navbar({
 
   return (
     <>
-      <header className="h-[70px] border-b border-tiktok-border bg-tiktok-dark flex items-center justify-between px-6 shrink-0 z-10 w-full relative">
+      <header className="h-[70px] border-b border-tiktok-border bg-tiktok-dark flex items-center justify-between px-6 shrink-0 z-50 w-full relative">
 
       {/* ── Brand ────────────────────── */}
       <div className="flex items-center gap-3 w-[200px] shrink-0">
@@ -191,7 +191,7 @@ export default function Navbar({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.96 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-[calc(100%+8px)] w-72 bg-[#161616] border border-[#2a2a2a] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden z-50"
+                  className="absolute right-0 top-[calc(100%+8px)] w-72 bg-[#161616] border border-[#2a2a2a] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden z-[60]"
                 >
                   {/* Dropdown header */}
                   <div className="px-4 py-3 border-b border-[#222] flex items-center gap-2">

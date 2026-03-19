@@ -48,4 +48,4 @@ export interface User {
 }
 
 // ====== API BASE ======
-export const API_BASE = "http://localhost:4000/api/v1";
+export const API_BASE = "http://localhost:4001/api/v1";
