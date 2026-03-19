@@ -11,6 +11,8 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; error?: string; role_id?: number }>;
   logout: () => void;
+  getToken: () => string | null;
+  updateSubscription: (serviceId: number) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -65,10 +67,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("token");
   };
 
+  const getToken = (): string | null => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("token");
+  };
+
+  // Called after successful subscription purchase to update local plan
+  const updateSubscription = (maxLiveSlots: number) => {
+    if (!user) return;
+    let newSub: "free" | "plus" | "pro" = "free";
+    if (maxLiveSlots >= 15) newSub = "pro";
+    else if (maxLiveSlots >= 5) newSub = "plus";
+    const updated = { ...user, subscription: newSub };
+    setUser(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  };
+
   const plan = user ? SUBSCRIPTION_PLANS[user.subscription] : null;
 
   return (
-    <AuthContext.Provider value={{ user, plan, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, plan, isLoading, login, logout, getToken, updateSubscription }}>
       {children}
     </AuthContext.Provider>
   );
