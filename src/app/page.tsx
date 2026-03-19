@@ -12,7 +12,18 @@ const STORAGE_KEY = "followedUsers";
 export default function Home() {
   const router = useRouter();
   const { user, plan, isLoading } = useAuth();
-  const [activeLives, setActiveLives] = useState<string[]>([]);
+  const [activeLives, setActiveLives] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return [];
+
+      const parsed: string[] = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Auth guard
   useEffect(() => {
@@ -21,22 +32,7 @@ export default function Home() {
     }
   }, [user, isLoading, router]);
 
-  // Load persisted list from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed: string[] = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setActiveLives(parsed);
-        }
-      }
-    } catch {
-      // ignore JSON parse errors
-    }
-  }, []);
-
-  // Persist to localStorage whenever list changes
+  // Persist list
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(activeLives));
   }, [activeLives]);
