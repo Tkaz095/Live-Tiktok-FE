@@ -6,7 +6,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { SUBSCRIPTION_PLANS } from "@/lib/auth";
 
 export default function Navbar({
   onJoin,
@@ -105,16 +104,17 @@ export default function Navbar({
         </AnimatePresence>
       </div>
 
-      {/* Right Stats */}
-      {/* <div className="flex items-center justify-end gap-3 text-sm w-[250px] shrink-0">
-        <Link
-          href="/login"
-          className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-medium text-white/85 transition hover:border-tiktok-cyan hover:text-tiktok-cyan"
-        >
-          Login
-        </Link> */}
-      {/* Right — User Info */}
-      <div className="flex items-center gap-3 w-[220px] shrink-0 justify-end">
+      {/* Right — User Info / Stats */}
+      <div className="flex items-center gap-3 w-[250px] shrink-0 justify-end">
+        {!user && (
+          <Link
+            href="/login"
+            className="rounded-full border border-white/20 px-4 py-1.5 text-xs font-medium text-white/85 transition hover:border-tiktok-cyan hover:text-tiktok-cyan mr-2"
+          >
+            Đăng nhập
+          </Link>
+        )}
+
         {/* Column counter */}
         <div className="flex flex-col items-end">
           <span className="text-gray-400 text-[10px]">Đang theo dõi</span>
