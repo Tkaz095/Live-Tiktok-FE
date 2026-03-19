@@ -17,7 +17,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionInfo> = {
     badge: "",
     maxColumns: 3,
     color: "#9ca3af",
-    features: ["3 Live monitors", "Chat tracking", "Basic stats"],
+    features: ["Theo dõi 3 Live đồng thời", "Theo dõi Chat", "Thống kê cơ bản"],
   },
   plus: {
     tier: "plus",
@@ -25,7 +25,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionInfo> = {
     badge: "⚡",
     maxColumns: 5,
     color: "#25f4ee",
-    features: ["5 Live monitors", "Gift tracking", "All stats", "Priority updates"],
+    features: ["Theo dõi 5 Live đồng thời", "Theo dõi Quà tặng", "Tất cả thống kê", "Cập nhật ưu tiên"],
   },
   pro: {
     tier: "pro",
@@ -33,7 +33,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionInfo> = {
     badge: "👑",
     maxColumns: 15,
     color: "#fce14b",
-    features: ["15 Live monitors", "Gift & coin tracking", "Analytics", "Priority support"],
+    features: ["Theo dõi 15 Live đồng thời", "Theo dõi Quà tặng & Xu", "Phân tích nâng cao", "Hỗ trợ ưu tiên"],
   },
 };
 

@@ -146,7 +146,7 @@ export default function PurchaseModal({ service, onClose, onSuccess }: PurchaseM
                 {/* Info */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-[#1a1a1a] rounded-xl px-3 py-2.5 text-center border border-[#282828]">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Live Slots</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Vị trí Live</p>
                     <p className="text-tiktok-cyan font-bold text-lg leading-none">{service.max_live_slots}</p>
                   </div>
                   <div className="bg-[#1a1a1a] rounded-xl px-3 py-2.5 text-center border border-[#282828]">
@@ -207,7 +207,7 @@ export default function PurchaseModal({ service, onClose, onSuccess }: PurchaseM
 
                   <p className="text-[11px] text-gray-600 text-center">
                     Demo — ấn nút bên dưới để kích hoạt ngay<br />
-                    <span className="text-gray-700">(Sandbox payment sẽ tích hợp sau)</span>
+                    <span className="text-gray-700">(Cổng thanh toán thử nghiệm sẽ tích hợp sau)</span>
                   </p>
                 </div>
 

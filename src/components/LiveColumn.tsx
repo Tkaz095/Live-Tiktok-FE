@@ -159,7 +159,42 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
         isBigGift,
       };
 
-      setGifts((prev) => [newGift, ...prev].slice(0, 30));
+      setGifts((prev) => {
+        // Find if this user already sent this gift recently
+        const existingIndex = prev.findIndex(
+          (g) => g.user === newGift.user && g.giftName === newGift.giftName
+        );
+
+        if (existingIndex !== -1) {
+          const updatedGifts = [...prev];
+          const existing = updatedGifts[existingIndex];
+          
+          // TikTok's repeatCount is a running total for the current streak.
+          // If the new count is 1, it's likely a new streak, so we add it.
+          // If it's > 1, it's a continuation, so we take the max of existing and new.
+          let newAmount = existing.amount;
+          if (count === 1) {
+            newAmount += 1;
+          } else {
+            newAmount = Math.max(existing.amount, count);
+          }
+
+          const newTotalValue = coinVal * newAmount;
+
+          updatedGifts[existingIndex] = {
+            ...existing,
+            amount: newAmount,
+            value: newTotalValue,
+            isBigGift: newTotalValue >= 500
+          };
+
+          // Move to top
+          const moved = updatedGifts.splice(existingIndex, 1)[0];
+          return [moved, ...updatedGifts].slice(0, 200);
+        }
+
+        return [newGift, ...prev].slice(0, 200);
+      });
       if (typeof data.totalCoins === "number") {
         setCoins(data.totalCoins);
       } else {

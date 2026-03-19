@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import LiveColumn from "@/components/LiveColumn";
-import { AnimatePresence } from "framer-motion";
+import * as FramerMotion from "framer-motion";
+const { motion, AnimatePresence } = FramerMotion;
 import { useAuth } from "@/lib/AuthContext";
 import { API_BASE } from "@/lib/auth";
+import DowngradeModal from "@/components/DowngradeModal";
 
 interface ActiveStream {
   id: number;
@@ -19,11 +21,12 @@ interface ActiveStream {
 
 export default function CustomerPage() {
   const router = useRouter();
-  const { user, plan, isLoading, getToken } = useAuth();
+  const { user, plan, isLoading, getToken, downgradeTimer, setDowngradeTimer } = useAuth();
   const mainRef = useRef<HTMLDivElement>(null);
   
   const [activeStreams, setActiveStreams] = useState<ActiveStream[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showDowngradeModal, setShowDowngradeModal] = useState(false);
 
   // Auth guard — only customers (role_id=2) can access
   useEffect(() => {
@@ -117,7 +120,7 @@ export default function CustomerPage() {
   const handleClose = async (tiktoker_id_or_handle: string | number) => {
     // Determine the session ID to close
     const session = activeStreams.find(s => 
-      s.tiktoker_id === tiktoker_id_or_handle || s.tiktok_handle === tiktoker_id_or_handle
+      s.id === tiktoker_id_or_handle || s.tiktoker_id === tiktoker_id_or_handle || s.tiktok_handle === tiktoker_id_or_handle
     );
     
     if (!session) {
@@ -155,6 +158,35 @@ export default function CustomerPage() {
     }
   };
 
+  // --- Downgrade Logic ---
+  useEffect(() => {
+    if (!isLoading && plan && activeStreams.length > plan.maxColumns && plan.maxColumns !== -1) {
+      if (downgradeTimer === null) {
+        setDowngradeTimer(90); // 1p30s
+        setShowDowngradeModal(true);
+      }
+    } else if (plan && activeStreams.length <= plan.maxColumns) {
+      setDowngradeTimer(null);
+      setShowDowngradeModal(false);
+    }
+  }, [plan, activeStreams.length, isLoading, downgradeTimer, setDowngradeTimer]);
+
+  useEffect(() => {
+    if (downgradeTimer !== null && downgradeTimer > 0) {
+      const t = setInterval(() => {
+        setDowngradeTimer(downgradeTimer - 1);
+      }, 1000);
+      return () => clearInterval(t);
+    } else if (downgradeTimer === 0) {
+      // Auto close excess streams
+      if (plan && activeStreams.length > plan.maxColumns && plan.maxColumns !== -1) {
+        const toClose = activeStreams.slice(plan.maxColumns);
+        toClose.forEach(s => handleClose(s.id));
+      }
+      setDowngradeTimer(null);
+    }
+  }, [downgradeTimer, plan, activeStreams, setDowngradeTimer]);
+
   if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -187,7 +219,7 @@ export default function CustomerPage() {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-tiktok-pink/20 border border-tiktok-pink/50 text-tiktok-pink px-4 py-2 rounded-full text-sm font-bold shadow-lg"
+                className="absolute top-6 left-1/2 -translate-x-1/2 z-[100] bg-[#fe2c55] border border-white/20 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-[0_10px_40px_rgba(254,44,85,0.4)] backdrop-blur-md flex items-center gap-3"
               >
                 {error}
                 <button onClick={() => setError(null)} className="ml-3 hover:text-white">✕</button>
@@ -222,6 +254,12 @@ export default function CustomerPage() {
           </div>
         </main>
       </div>
+      
+      <DowngradeModal 
+        isOpen={showDowngradeModal} 
+        onClose={() => setShowDowngradeModal(false)}
+        secondsRemaining={downgradeTimer ?? 0}
+      />
     </div>
   );
 }

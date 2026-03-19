@@ -12,7 +12,9 @@ interface AuthContextValue {
   login: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; error?: string; role_id?: number }>;
   logout: () => void;
   getToken: () => string | null;
-  updateSubscription: (serviceId: number) => void;
+  updateSubscription: (maxLiveSlots: number) => void;
+  downgradeTimer: number | null;
+  setDowngradeTimer: (timer: number | null) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [downgradeTimer, setDowngradeTimer] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -86,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const plan = user ? SUBSCRIPTION_PLANS[user.subscription] : null;
 
   return (
-    <AuthContext.Provider value={{ user, plan, isLoading, login, logout, getToken, updateSubscription }}>
+    <AuthContext.Provider value={{ user, plan, isLoading, login, logout, getToken, updateSubscription, downgradeTimer, setDowngradeTimer }}>
       {children}
     </AuthContext.Provider>
   );

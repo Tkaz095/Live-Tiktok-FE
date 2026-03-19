@@ -50,7 +50,7 @@ export default function LiveColumnHeader({
             <h3 className="font-bold text-base truncate flex items-center gap-2" title={hostNickname}>
               {hostNickname}{" "}
               {isLiveEnded && (
-                <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded ml-1">OFFLINE</span>
+                <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded ml-1 uppercase">Ngoại tuyến</span>
               )}
             </h3>
             <div className="w-2 h-2 rounded-full bg-tiktok-pink animate-pulse shrink-0" title="LIVE" />
@@ -61,7 +61,7 @@ export default function LiveColumnHeader({
             {hostFollowers !== null && (
               <>
                 <span className="text-gray-600">•</span>
-                <span className="text-gray-400 whitespace-nowrap">{formatNumber(hostFollowers)} Follower</span>
+                <span className="text-gray-400 whitespace-nowrap">{formatNumber(hostFollowers)} Người theo dõi</span>
               </>
             )}
           </div>

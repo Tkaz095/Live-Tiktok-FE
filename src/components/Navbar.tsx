@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Plus, LogOut, Zap, Crown, ChevronDown, Tv2, Radio } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -162,6 +164,17 @@ export default function Navbar({
             <span className="text-gray-500 text-xs font-normal ml-1">phiên</span>
           </span>
         </div>
+        
+        {/* Downgrade Timer */}
+        {useAuth().downgradeTimer !== null && (
+          <div className="flex items-center gap-2 bg-tiktok-pink/10 border border-tiktok-pink/30 px-3 py-1.5 rounded-xl animate-pulse">
+            <div className="w-2 h-2 rounded-full bg-tiktok-pink" />
+            <span className="text-[11px] font-black text-white tabular-nums">
+              {Math.floor(useAuth().downgradeTimer! / 60)}:{(useAuth().downgradeTimer! % 60).toString().padStart(2, '0')}
+            </span>
+            <span className="text-[10px] text-tiktok-pink font-bold uppercase tracking-tight">Cắt giảm</span>
+          </div>
+        )}
 
         {/* Services / Plan dropdown */}
         {user && (
@@ -245,7 +258,7 @@ export default function Navbar({
                               <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{service.description}</p>
                               <div className="flex items-center gap-3 mt-1.5">
                                 <span className="text-[11px] text-tiktok-cyan font-bold">
-                                  📺 {service.max_live_slots} slot Live
+                                  📺 {service.max_live_slots} vị trí Live
                                 </span>
                                 <span className="text-[11px] text-gray-500">
                                   {formatPrice(service.price_monthly)}
