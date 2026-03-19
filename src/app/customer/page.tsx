@@ -233,6 +233,7 @@ export default function CustomerPage() {
                 <LiveColumn
                   key={stream.id}
                   username={stream.tiktok_handle}
+                  sessionId={stream.id}
                   onClose={() => handleClose(stream.id)}
                 />
               ))}

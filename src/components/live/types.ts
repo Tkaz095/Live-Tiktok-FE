@@ -21,6 +21,7 @@ export interface TikTokChatData {
   user?: string;
   username?: string;
   message?: string;
+  chatCount?: number;
 }
 
 export interface TikTokGiftData {
@@ -41,6 +42,8 @@ export interface TikTokGiftData {
 export interface RoomInfoData {
   viewerCount?: number;
   likeCount?: number;
+  totalCoins?: number;
+  chatCount?: number;
   hostNickname?: string;
   hostFollowers?: number;
 }

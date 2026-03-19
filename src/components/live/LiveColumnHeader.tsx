@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RefreshCw, Wifi, WifiOff, Coins } from "lucide-react";
+import { X, RefreshCw, Wifi, WifiOff, Coins, BarChart2 } from "lucide-react";
 
 interface LiveColumnHeaderProps {
   username: string;
@@ -16,6 +16,7 @@ interface LiveColumnHeaderProps {
   avatar: string;
   onReconnect: () => void;
   onClose: () => void;
+  onShowStats: () => void;
   formatNumber: (n: number) => string;
 }
 
@@ -32,12 +33,39 @@ export default function LiveColumnHeader({
   avatar,
   onReconnect,
   onClose,
+  onShowStats,
   formatNumber,
 }: LiveColumnHeaderProps) {
   return (
-    <div className="p-4 flex items-center justify-between border-b border-tiktok-border/50 relative z-10 bg-tiktok-card/90">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-tiktok-cyan via-tiktok-pink to-tiktok-yellow">
+    <div className="flex flex-col border-b border-tiktok-border/50 relative z-10 bg-tiktok-card/90">
+      {/* Action Bar Row */}
+      <div className="px-3 py-1 flex items-center justify-end gap-2 bg-black/40 border-b border-white/5">
+        <button
+          onClick={onShowStats}
+          className="text-gray-500 hover:text-tiktok-cyan p-1 transition-colors"
+          title="Xem thống kê phiên Live"
+        >
+          <BarChart2 size={14} />
+        </button>
+        <button
+          onClick={onReconnect}
+          className="text-gray-500 hover:text-white p-1 transition-colors"
+          title="Tải lại kết nối"
+        >
+          <RefreshCw size={14} />
+        </button>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-tiktok-pink p-1 transition-colors"
+          title="Đóng thẻ"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Main Profile Row */}
+      <div className="p-4 flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-tiktok-cyan via-tiktok-pink to-tiktok-yellow shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={avatar}
@@ -86,13 +114,12 @@ export default function LiveColumnHeader({
             ) : connected ? (
               <motion.div
                 key={syncCount}
-                initial={{ color: "#ffffff" }}
-                animate={{ color: "#4ade80" }}
-                transition={{ duration: 0.5 }}
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
                 className="flex items-center gap-1.5"
               >
-                <Wifi size={10} />
-                <span>{isConnectingTiktok ? "LIVE • Đang tải dữ liệu..." : "LIVE • Đã kết nối"}</span>
+                <Wifi size={10} className="text-tiktok-cyan" />
+                <span className="text-gray-300">{isConnectingTiktok ? "LIVE • Đang tải dữ liệu..." : "LIVE • Đã kết nối"}</span>
               </motion.div>
             ) : (
               <>
@@ -102,23 +129,6 @@ export default function LiveColumnHeader({
             )}
           </div>
         </div>
-      </div>
-
-      <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={onReconnect}
-          className="text-gray-500 hover:text-white p-1 rounded-md transition-colors"
-          title="Tải lại kết nối"
-        >
-          <RefreshCw size={16} />
-        </button>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-white p-1 rounded-md transition-colors"
-          title="Đóng thẻ"
-        >
-          <X size={18} />
-        </button>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Clock, TrendingUp, Hash, User, ShieldAlert, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { GiftItem } from "./types";
 
 interface GiftFeedProps {
@@ -14,6 +14,7 @@ interface GiftFeedProps {
 export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
   const [sortBy, setSortBy] = useState<'time' | 'top_user_value' | 'top_total_gift' | 'whale_alert' | 'top_count_gift'>('time');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sorting / Aggregation Logic
   const getDisplayGifts = () => {
@@ -128,58 +129,63 @@ export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
           </AnimatePresence>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-        <AnimatePresence mode="popLayout">
-          {sortedGifts.map((g) => (
-            <motion.div
-              key={g.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`bg-gradient-to-r ${
-                g.isBigGift
-                  ? "from-tiktok-yellow/30 to-tiktok-pink/20 border-tiktok-yellow/50"
-                  : "from-tiktok-yellow/10 to-transparent border-tiktok-yellow/20"
-              } border rounded-lg p-2 flex items-center justify-between shadow-sm`}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-black/40 shrink-0 flex items-center justify-center text-lg overflow-hidden border border-white/5">
-                  {g.icon.startsWith("http") ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={g.icon} alt={g.giftName} className="w-full h-full object-contain p-0.5" />
-                  ) : (
-                    g.icon
-                  )}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <div
+          ref={scrollRef}
+          className="absolute inset-0 overflow-y-auto p-2 flex flex-col gap-2 custom-scrollbar"
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            {sortedGifts.map((g) => (
+              <motion.div
+                key={g.id}
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`bg-gradient-to-r ${
+                  g.isBigGift
+                    ? "from-tiktok-yellow/30 to-tiktok-pink/20 border-tiktok-yellow/50"
+                    : "from-tiktok-yellow/10 to-transparent border-tiktok-yellow/20"
+                } border rounded-lg p-2 flex items-center justify-between shadow-sm`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-black/40 shrink-0 flex items-center justify-center text-lg overflow-hidden border border-white/5">
+                    {g.icon.startsWith("http") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={g.icon} alt={g.giftName} className="w-full h-full object-contain p-0.5" />
+                    ) : (
+                      g.icon
+                    )}
+                  </div>
+                  <div className="flex flex-col leading-tight min-w-0">
+                    <span className="text-xs font-bold text-white max-w-[140px] truncate">
+                      {sortBy.startsWith('top_total_gift') || sortBy.startsWith('top_unit_gift') ? g.giftName : g.user}
+                    </span>
+                    <span className="text-[10px] text-tiktok-yellow leading-tight">
+                      {sortBy === 'top_user_value' 
+                        ? `Tổng chi: ${g.value} xu` 
+                        : (sortBy === 'top_total_gift' || sortBy === 'top_count_gift')
+                          ? `Số lượng: ${g.amount} | Tổng: ${g.value} xu`
+                          : (sortBy === 'whale_alert')
+                            ? `Quà lớn: ${g.giftName} (${g.value / g.amount} xu)`
+                            : `Đã tặng ${g.giftName}`
+                      }
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col leading-tight min-w-0">
-                  <span className="text-xs font-bold text-white max-w-[140px] truncate">
-                    {sortBy.startsWith('top_total_gift') || sortBy.startsWith('top_unit_gift') ? g.giftName : g.user}
-                  </span>
-                  <span className="text-[10px] text-tiktok-yellow leading-tight">
-                    {sortBy === 'top_user_value' 
-                      ? `Tổng chi: ${g.value} xu` 
-                      : (sortBy === 'top_total_gift' || sortBy === 'top_count_gift')
-                        ? `Số lượng: ${g.amount} | Tổng: ${g.value} xu`
-                        : (sortBy === 'whale_alert')
-                          ? `Quà lớn: ${g.giftName} (${g.value / g.amount} xu)`
-                          : `Đã tặng ${g.giftName}`
-                    }
-                  </span>
+                <div className="flex flex-col items-end gap-0.5">
+                  <span className="font-bold text-white text-sm">x{g.amount}</span>
+                  {g.isBigGift && <span className="text-[9px] text-tiktok-pink font-bold">BÙM!</span>}
                 </div>
-              </div>
-              <div className="flex flex-col items-end gap-0.5">
-                <span className="font-bold text-white text-sm">x{g.amount}</span>
-                {g.isBigGift && <span className="text-[9px] text-tiktok-pink font-bold">BÙM!</span>}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {gifts.length === 0 && (
-          <div className="text-xs text-center text-gray-500 mt-4 italic">
-            {connected ? "Đang chờ quà tặng..." : "Đang kết nối tới Live..."}
-          </div>
-        )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {gifts.length === 0 && (
+            <div className="text-xs text-center text-gray-500 mt-4 italic">
+              {connected ? "Đang chờ quà tặng..." : "Đang kết nối tới Live..."}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

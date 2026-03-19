@@ -7,6 +7,7 @@ import { createLiveSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
 
 import BigGiftOverlay from "./live/BigGiftOverlay";
+import SessionStatsModal from "./live/SessionStatsModal";
 import LiveColumnHeader from "./live/LiveColumnHeader";
 import StatsBar from "./live/StatsBar";
 import GiftFeed from "./live/GiftFeed";
@@ -25,6 +26,7 @@ import type {
 
 interface LiveColumnProps {
   username: string;
+  sessionId?: number;
   onClose: (username: string) => void;
 }
 
@@ -39,17 +41,19 @@ function formatNumber(num: number) {
   return num.toString();
 }
 
-export default function LiveColumn({ username, onClose }: LiveColumnProps) {
+export default function LiveColumn({ username, sessionId, onClose }: LiveColumnProps) {
   const [filter, setFilter] = useState<"all" | "gift" | "chat">("all");
   const [connected, setConnected] = useState(false);
   const [isConnectingTiktok, setIsConnectingTiktok] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showStats, setShowStats] = useState(false);
 
   const [viewers, setViewers] = useState(0);
   const [likes, setLikes] = useState(0);
   const [displayLikes, setDisplayLikes] = useState(0);
   const [coins, setCoins] = useState(0);
   const [displayCoins, setDisplayCoins] = useState(0);
+  const [totalChats, setTotalChats] = useState(0);
   const [isLiveEnded, setIsLiveEnded] = useState(false);
   const [hostNickname, setHostNickname] = useState(username);
   const [hostFollowers, setHostFollowers] = useState<number | null>(null);
@@ -76,10 +80,10 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
     setPinnedChat((prev) => (prev?.id === chat.id ? null : chat));
 
   const triggerBigGift = (icon: string, name: string) => {
-    columnControls.start({
-      x: [-8, 8, -6, 6, -4, 4, 0],
-      transition: { duration: 0.5, ease: "easeInOut" },
-    });
+    // columnControls.start({
+    //   x: [-8, 8, -6, 6, -4, 4, 0],
+    //   transition: { duration: 0.5, ease: "easeInOut" },
+    // });
     setCurrentBigGift({ icon, name });
     bigGiftIconControls
       .start({
@@ -101,7 +105,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       setConnected(true);
       setIsConnectingTiktok(true);
       setError(null);
-      socket.emit("join", { room: username });
+      socket.emit("join", { room: username, sessionId });
     });
 
     socket.on("disconnect", () => setConnected(false));
@@ -133,6 +137,11 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
         user: data.username ?? data.user ?? "unknown",
         message: data.message ?? "",
       };
+      if (typeof data.chatCount === "number") {
+        setTotalChats(data.chatCount);
+      } else {
+        setTotalChats((prev) => prev + 1);
+      }
       setChats((prev) => {
         if (prev.some((c) => c.id === newChat.id)) return prev;
         return [newChat, ...prev].slice(0, 100);
@@ -208,6 +217,8 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
       triggerSyncSync();
       if (typeof data.viewerCount === "number") setViewers(data.viewerCount);
       if (typeof data.likeCount === "number") setLikes(data.likeCount);
+      if (typeof data.totalCoins === "number") setCoins(data.totalCoins);
+      if (typeof data.chatCount === "number") setTotalChats(data.chatCount);
       if (data.hostNickname) setHostNickname(data.hostNickname);
       if (typeof data.hostFollowers === "number") setHostFollowers(data.hostFollowers);
     });
@@ -330,7 +341,15 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
           setIsConnectingTiktok(true);
           setReconnectKey((k) => k + 1);
         }}
+        onShowStats={() => setShowStats(true)}
         onClose={() => onClose(username)}
+      />
+
+      <SessionStatsModal
+        isOpen={showStats}
+        onClose={() => setShowStats(false)}
+        sessionId={sessionId || 0}
+        username={username}
       />
 
       <StatsBar
@@ -374,6 +393,7 @@ export default function LiveColumn({ username, onClose }: LiveColumnProps) {
             )}
             <ChatFeed
               chats={chats}
+              totalChats={totalChats}
               pinnedChat={pinnedChat}
               connected={connected}
               onTogglePin={togglePin}
