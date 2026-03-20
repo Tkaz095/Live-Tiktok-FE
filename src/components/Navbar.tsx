@@ -1,326 +1,178 @@
 "use client";
 
+import { LayoutDashboard, Monitor, User, LogOut, ChevronDown, Zap, Activity, Settings, UserCircle } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, LogOut, Zap, Crown, ChevronDown, Tv2, Radio } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/AuthContext";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { API_BASE } from "@/lib/auth";
-import PurchaseModal from "./PurchaseModal";
+import { useAuth } from "@/features/shared-auth/stores/AuthContext";
+import { SUBSCRIPTION_PLANS, SubscriptionTier } from "@/features/shared-auth/types/auth.types";
 
-interface Service {
-  id: number;
-  name: string;
-  max_live_slots: number;
-  price_monthly: number;
-  description: string | null;
-  status: string;
+interface NavbarProps {
+  activeCount: number;
 }
 
-export default function Navbar({
-  onJoin,
-  activeCount = 0,
-}: {
-  onJoin?: (username: string) => void;
-  activeCount?: number;
-}) {
+export default function Navbar({ activeCount }: NavbarProps) {
+  const pathname = usePathname();
   const router = useRouter();
-  const { user, plan, logout } = useAuth();
-  const [url, setUrl] = useState("");
-  const [limitHit, setLimitHit] = useState(false);
-  const [services, setServices] = useState<Service[]>([]);
-  const [showServices, setShowServices] = useState(false);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { plan, logout, user } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch services list on mount
-  useEffect(() => {
-    fetch(`${API_BASE}/services`)
-      .then((r) => r.json())
-      .then((data) => { if (data.success) setServices(data.data); })
-      .catch(() => {});
-  }, []);
+  const navItems = [
+    { name: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard },
+    { name: "Monitor", href: "/user/monitor", icon: Monitor },
+    { name: "Dịch vụ", href: "/user/services", icon: Zap },
+  ];
 
-  // Close dropdown on outside click
+  // Close menu on click outside
   useEffect(() => {
-    function handleOutsideClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowServices(false);
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
       }
     }
-    if (showServices) document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [showServices]);
-
-  const handleJoin = () => {
-    const trimmed = url.trim();
-    if (!trimmed) return;
-
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    if (plan && plan.maxColumns !== -1 && activeCount >= plan.maxColumns) {
-      setLimitHit(true);
-      setTimeout(() => setLimitHit(false), 3000);
-      return;
-    }
-
-    let username = "";
-    const match = trimmed.match(/tiktok\.com\/@([a-zA-Z0-9_.]+)/);
-    if (match && match[1]) {
-      username = match[1];
-    } else if (trimmed.startsWith("@")) {
-      username = trimmed.slice(1);
-    } else {
-      username = trimmed;
-    }
-
-    if (onJoin && username) {
-      onJoin(username);
-    }
-    setUrl("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleJoin();
-  };
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
-
-  const PlanIcon = plan?.tier === "pro" ? Crown : plan?.tier === "plus" ? Zap : null;
-
-  function formatPrice(price: number) {
-    if (price === 0) return "Miễn phí";
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
-  }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <>
-      <header className="h-[70px] border-b border-tiktok-border bg-tiktok-dark flex items-center justify-between px-6 shrink-0 z-50 w-full relative">
-
-      {/* ── Brand ────────────────────── */}
-      <div className="flex items-center gap-3 w-[200px] shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-tiktok-cyan to-tiktok-pink flex items-center justify-center text-white font-bold text-sm shadow-[0_0_10px_rgba(37,244,238,0.2)]">
-          TT
-        </div>
-        <h1 className="text-white font-bold text-lg tracking-tight">
-          TikTok <span className="text-tiktok-cyan">Live</span> Monitor
-        </h1>
-      </div>
-
-      {/* ── Center — Add URL ─────────── */}
-      <div className="flex flex-col items-center justify-center flex-1 max-w-2xl px-6 gap-1">
-        <div className="flex items-center gap-2 w-full">
-          <div className="relative w-full flex-1 group">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Dán link TikTok Live hoặc @username..."
-              className="w-full bg-[#1b1b1b] border border-tiktok-border rounded-full py-2.5 px-5 text-sm focus:outline-none focus:border-tiktok-cyan transition-colors text-white placeholder-gray-500 hover:border-[#444]"
-            />
+    <header className="h-[64px] bg-background/80 backdrop-blur-3xl border-b border-tiktok-border flex items-center px-6 gap-6 z-[100] shrink-0 sticky top-0 w-full shadow-lg">
+      {/* ── Brand Section ───────────────── */}
+      <div className="flex items-center gap-3 shrink-0 relative group">
+        <div className="absolute -inset-2 bg-gradient-to-r from-tiktok-pink/20 to-tiktok-cyan/20 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        <Link href="/user/dashboard" className="flex items-center gap-2.5 relative z-10 active:scale-95 transition-transform">
+          <div className="w-9 h-9 bg-gradient-to-br from-[#ff0050] to-[#00f2ea] rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(255,0,80,0.2)] hover:shadow-[0_0_20px_rgba(37,244,238,0.3)] transition-all duration-500">
+            <span className="text-white font-black text-lg tracking-tighter italic select-none">TT</span>
           </div>
-          <button
-            onClick={handleJoin}
-            className="bg-tiktok-pink hover:bg-[#e0264c] text-white px-5 py-2.5 rounded-full font-medium text-sm flex items-center gap-2 transition-all shrink-0 shadow-[0_0_10px_rgba(254,44,85,0.3)] hover:shadow-[0_0_20px_rgba(254,44,85,0.6)]"
-          >
-            <Plus size={17} strokeWidth={2.5} />
-            Thêm URL
-          </button>
-        </div>
-
-        <AnimatePresence>
-          {limitHit && (
-            <motion.p
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="text-xs text-tiktok-yellow"
-            >
-              ⚠️ Gói {plan?.label} chỉ hỗ trợ tối đa {plan?.maxColumns} luồng.
-            </motion.p>
-          )}
-        </AnimatePresence>
+          <div className="hidden lg:block">
+            <h1 className="text-base font-bold text-white leading-none tracking-tight group-hover:text-tiktok-cyan transition-colors">TikTok Live</h1>
+            <p className="text-[8px] font-bold text-gray-500 uppercase tracking-[0.2em] mt-0.5 opacity-60">PRO MONITOR</p>
+          </div>
+        </Link>
       </div>
+
+      {/* ── Center — Navigation ─────────── */}
+      <nav className="flex-1 flex justify-center">
+        <div className="flex items-center bg-tiktok-dark/40 backdrop-blur-md rounded-xl p-1 border border-tiktok-border shadow-inner gap-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+            const Icon = item.icon;
+            
+            return (
+              <Link 
+                key={item.name}
+                href={item.href}
+                className="relative group focus:outline-none"
+              >
+                <div className={`
+                  relative z-10 px-4 py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase transition-all duration-500 flex items-center gap-2
+                  ${isActive ? "text-black" : "text-gray-500 hover:text-white"}
+                `}>
+                  <Icon size={14} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "text-black" : "text-gray-600 transition-colors group-hover:text-tiktok-pink"} />
+                  <span className="hidden sm:block">{item.name}</span>
+                </div>
+                
+                {isActive && (
+                  <motion.div 
+                    layoutId="nav-bg-compact-final"
+                    className="absolute inset-0 bg-gradient-to-r from-tiktok-cyan to-[#00d1ca] rounded-lg shadow-[0_0_15px_rgba(37,244,238,0.2)]"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* ── Right panel ──────────────── */}
-      <div className="flex items-center gap-3 w-[280px] shrink-0 justify-end">
-
-        {/* Live count */}
-        <div className="flex flex-col items-end shrink-0">
-          <span className="text-gray-400 text-[10px] flex items-center gap-1">
-            <Radio size={10} className="text-tiktok-pink animate-pulse" />
-            Đang theo dõi
-          </span>
-          <span className="text-tiktok-cyan font-bold text-xl leading-none">
-            {activeCount}
-            <span className="text-gray-500 text-xs font-normal ml-1">phiên</span>
-          </span>
-        </div>
-        
-        {/* Downgrade Timer */}
-        {useAuth().downgradeTimer !== null && (
-          <div className="flex items-center gap-2 bg-tiktok-pink/10 border border-tiktok-pink/30 px-3 py-1.5 rounded-xl animate-pulse">
-            <div className="w-2 h-2 rounded-full bg-tiktok-pink" />
-            <span className="text-[11px] font-black text-white tabular-nums">
-              {Math.floor(useAuth().downgradeTimer! / 60)}:{(useAuth().downgradeTimer! % 60).toString().padStart(2, '0')}
-            </span>
-            <span className="text-[10px] text-tiktok-pink font-bold uppercase tracking-tight">Cắt giảm</span>
-          </div>
-        )}
-
-        {/* Services / Plan dropdown */}
-        {user && (
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowServices((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold shrink-0 transition-all hover:scale-105"
-              style={{
-                color: plan?.color ?? "#9ca3af",
-                borderColor: `${plan?.color ?? "#9ca3af"}50`,
-                backgroundColor: `${plan?.color ?? "#9ca3af"}15`,
-              }}
-              title="Xem các gói dịch vụ"
-            >
-              {PlanIcon && <PlanIcon size={11} />}
-              {plan?.badge} {plan?.label ?? "Free"}
-              <ChevronDown
-                size={13}
-                className={`transition-transform duration-200 ${showServices ? "rotate-180" : ""}`}
+      <div className="flex items-center gap-6 shrink-0">
+        {/* Compact Status */}
+        <div className="hidden xl:flex items-center gap-3 px-3 py-1.5 bg-tiktok-dark/30 border border-tiktok-border rounded-xl">
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Live</span>
+              <span className="text-xs font-bold text-white leading-none">{activeCount} <span className="text-[10px] text-gray-600 font-medium">/ {plan?.maxColumns === -1 ? '∞' : plan?.maxColumns || 3}</span></span>
+            </div>
+            <div className="h-0.5 w-12 bg-black rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${(activeCount / (plan?.maxColumns === -1 ? 10 : plan?.maxColumns || 3)) * 100}%` }}
+                className="h-full bg-tiktok-cyan"
               />
-            </button>
-
-            <AnimatePresence>
-              {showServices && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 4, scale: 0.96 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-[calc(100%+8px)] w-72 bg-[#161616] border border-[#2a2a2a] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden z-[60]"
-                >
-                  {/* Dropdown header */}
-                  <div className="px-4 py-3 border-b border-[#222] flex items-center gap-2">
-                    <Tv2 size={14} className="text-tiktok-cyan" />
-                    <span className="text-xs font-semibold text-white/80 uppercase tracking-widest">
-                      Gói dịch vụ
-                    </span>
-                  </div>
-
-                  {/* Service list */}
-                  <div className="py-1 max-h-80 overflow-y-auto">
-                    {services.filter(s => s.status === 'active').length === 0 && (
-                      <p className="text-xs text-gray-500 px-4 py-4 text-center">Đang tải gói dịch vụ...</p>
-                    )}
-                    {services
-                      .filter((s) => s.status === "active")
-                      .map((service) => {
-                        const isCurrent =
-                          plan && service.max_live_slots === plan.maxColumns;
-                        return (
-                          <div
-                            key={service.id}
-                            className={`px-4 py-3 flex items-start gap-3 hover:bg-white/5 transition-colors cursor-pointer border-b border-[#1e1e1e] last:border-0 ${
-                              isCurrent ? "bg-tiktok-cyan/5" : ""
-                            }`}
-                            onClick={() => { setShowServices(false); setSelectedService(service); }}
-                          >
-                            {/* Icon */}
-                            <div
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-black ${
-                                service.price_monthly === 0
-                                  ? "bg-gray-700 text-gray-300"
-                                  : service.price_monthly < 150000
-                                  ? "bg-tiktok-cyan/20 text-tiktok-cyan"
-                                  : "bg-tiktok-yellow/20 text-tiktok-yellow"
-                              }`}
-                            >
-                              {service.price_monthly === 0 ? "F" : service.price_monthly < 150000 ? "⚡" : "👑"}
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-white truncate">{service.name}</span>
-                                {isCurrent && (
-                                  <span className="text-[9px] bg-tiktok-cyan/20 text-tiktok-cyan px-1.5 py-0.5 rounded-full font-bold">
-                                    HIỆN TẠI
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{service.description}</p>
-                              <div className="flex items-center gap-3 mt-1.5">
-                                <span className="text-[11px] text-tiktok-cyan font-bold">
-                                  📺 {service.max_live_slots} vị trí Live
-                                </span>
-                                <span className="text-[11px] text-gray-500">
-                                  {formatPrice(service.price_monthly)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-
-                  {/* Footer */}
-                  <div className="border-t border-[#222] px-4 py-2.5">
-                    <p className="text-[10px] text-gray-600 text-center">
-                      Liên hệ admin để nâng cấp gói
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Login link if not logged in */}
-        {!user && (
-          <Link
-            href="/login"
-            className="rounded-full border border-white/20 px-4 py-1.5 text-xs font-medium text-white/85 transition hover:border-tiktok-cyan hover:text-tiktok-cyan"
+        {/* User Card with Dropdown */}
+        <div className="relative" ref={menuRef}>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center gap-3 pl-6 border-l border-tiktok-border hover:opacity-80 transition-opacity focus:outline-none"
           >
-            Đăng nhập
-          </Link>
-        )}
+            <div className="flex flex-col items-end hidden md:flex select-none">
+              <span className="text-[11px] font-bold text-white/90 truncate max-w-[100px]">{user?.name}</span>
+              <span className={`text-[7px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                  plan?.tier === 'pro' ? "text-tiktok-yellow" : 
+                  plan?.tier === 'plus' ? "text-tiktok-cyan" : 
+                  "text-gray-500"
+                }`}>
+                {plan?.label}
+              </span>
+            </div>
+            
+            <div className={`h-9 w-9 rounded-xl bg-tiktok-dark border flex items-center justify-center transition-all shadow-inner ${isMenuOpen ? 'border-tiktok-cyan shadow-[0_0_10px_rgba(37,244,238,0.2)]' : 'border-tiktok-border'}`}>
+              <User size={16} className={isMenuOpen ? "text-tiktok-cyan" : "text-gray-500"} />
+            </div>
+            <ChevronDown size={12} className={`text-gray-600 transition-transform duration-300 ${isMenuOpen ? 'rotate-180 text-tiktok-cyan' : ''}`} />
+          </button>
 
-        {/* Avatar + Logout */}
-        {user && (
-          <div className="flex items-center gap-2">
-            <img
-              src={user.avatar}
-              alt={user.name}
-              title={user.name}
-              className="w-8 h-8 rounded-full border border-[#333] shrink-0"
-            />
-            <button
-              onClick={handleLogout}
-              title="Đăng xuất"
-              className="text-gray-500 hover:text-tiktok-pink transition-colors p-1 rounded-md"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        )}
+          {/* Dropdown Menu */}
+          <AnimatePresence>
+            {isMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="absolute right-0 mt-3 w-48 bg-tiktok-surface border border-tiktok-border rounded-2xl shadow-2xl overflow-hidden py-1.5 z-[200]"
+              >
+                <div className="px-4 py-2 border-b border-tiktok-border mb-1.5">
+                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">Tài khoản</p>
+                  <p className="text-[12px] font-bold text-white mt-1.5 truncate">{user?.email}</p>
+                </div>
+
+                <button 
+                  onClick={() => { setIsMenuOpen(false); router.push('/user/settings'); }}
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all text-[11px] font-bold uppercase tracking-wider"
+                >
+                  <Settings size={14} className="opacity-60" />
+                  Cài đặt hồ sơ
+                </button>
+
+                <button 
+                  onClick={() => { setIsMenuOpen(false); router.push('/user/services'); }}
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-gray-400 hover:text-tiktok-cyan hover:bg-tiktok-cyan/5 transition-all text-[11px] font-bold uppercase tracking-wider"
+                >
+                  <Zap size={14} className="text-tiktok-cyan" />
+                  Gói dịch vụ
+                </button>
+
+                <div className="h-[1px] bg-tiktok-border my-1.5 mx-2" />
+
+                <button
+                  onClick={() => { setIsMenuOpen(false); logout(); }}
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-gray-500 hover:text-tiktok-pink hover:bg-tiktok-pink/5 transition-all text-[11px] font-bold uppercase tracking-wider"
+                >
+                  <LogOut size={14} className="opacity-60" />
+                  Đăng xuất
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </header>
-
-      {/* Purchase Modal */}
-      {selectedService && (
-        <PurchaseModal
-          service={selectedService}
-          onClose={() => setSelectedService(null)}
-          onSuccess={() => setSelectedService(null)}
-        />
-      )}
-    </>
   );
 }

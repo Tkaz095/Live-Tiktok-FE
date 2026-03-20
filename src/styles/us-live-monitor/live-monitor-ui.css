@@ -1,0 +1,13 @@
+/* live-monitor-ui.css */
+:root {
+  --tiktok-cyan: #25f4ee;
+  --tiktok-pink: #fe2c55;
+  --tiktok-yellow: #fce14b;
+  --tiktok-dark: #010101;
+  --tiktok-card: #0d1117;
+  --tiktok-border: #30363d;
+}
+
+.live-monitor-container {
+  @apply bg-tiktok-dark text-white;
+}

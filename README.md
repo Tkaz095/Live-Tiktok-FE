@@ -1,36 +1,128 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LIVE_TIKTOK_FE
+
+Hệ thống theo dõi Live TikTok (Standard 2026).
+
+## Tech Stack
+- **Core:** React + TypeScript (Next.js 16)
+- **State Management:** Redux Toolkit (Standard Thunks - No RTK Query)
+- **Form:** React Hook Form + Zod
+- **Style:** Tailwind CSS (Mobile-first)
+- **API:** Axios
+- **Test:** Vitest + React Testing Library
+
+---
+
+## Naming Conventions (QUAN TRỌNG)
+Tuân thủ tuyệt đối để tránh lỗi Case Sensitive khi deploy lên Linux/Vercel.
+
+| Đối tượng | Quy tắc (Case) | Ví dụ Đúng  | Ví dụ Sai  |
+| :--- | :--- | :--- | :--- |
+| **Folders** | **kebab-case** | `medical-records/`, `patient-profile/` | `MedicalRecords`, `medicalRecords` |
+| **Components** (`.tsx`) | **PascalCase** | `LoginForm.tsx`, `AllergySection.tsx` | `loginForm.tsx`, `allergySection.tsx` |
+| **Pages** (`.tsx`) | **PascalCase** | `MedicalRecordPage.tsx` | `medicalRecordPage.tsx` |
+| **Logic Files** (`.ts`) | **camelCase** | `authSlice.ts`, `medicalApi.ts` | `AuthSlice.ts` |
+| **Types/Utils** (`.ts`) | **camelCase** | `schemas.ts`, `formatDate.ts` | `Schemas.ts` |
+| **Component Name** | **PascalCase** | `export const LoginForm = () => {}` | `export const loginForm = ...` |
+
+### Quy ước Zod/Types
+- File Zod schema: `*.schema.ts` (vd: `serviceTemplate.schema.ts`).
+- File domain types: `*.types.ts` (vd: `serviceTemplate.types.ts`).
+
+### Quy ước tên file theo vai trò (chung cho toàn dự án)
+- API (`features/*/api`): `*Api.ts` hoặc verb rõ nghĩa (`getMe.ts`, `login.ts`); **không dùng `*.api.ts`**.
+- Hooks: `use*.ts` / `use*.tsx` (vd: `useViewRecord.ts`).
+- Redux:
+  - Slice: `*Slice.ts` hoặc `*.slice.ts` (thống nhất theo từng feature)
+  - Thunks: `*.thunks.ts` hoặc `*Thunk.ts` (thống nhất theo từng feature)
+  - Selectors: `*.selectors.ts`
+  - State: `*.state.ts`
+- Types/Schema:
+  - Domain types: `*.types.ts`
+  - Zod schema: `*.schema.ts`
+- Utils/helpers/formatters: camelCase + hậu tố ngữ nghĩa (`formatters.ts`, `dateUtils.ts`...).
+
+---
+
+## Project Structure (Bulletproof React)
+
+Cấu trúc thư mục được tổ chức theo **Feature**. Bên dưới gồm 2 phần:
+1) Cấu trúc tổng quát của dự án.
+2) Mẫu chi tiết cho feature lớn (ví dụ Paraclinical).
+
+### Tổng quát
+```text
+src/
+├── features/
+│   ├── live-monitor/          <-- Tên feature (kebab-case)
+│   │   ├── api/               <-- Chứa file gọi Axios thuần
+│   │   ├── components/        <-- UI Components (PascalCase)
+│   │   ├── pages/             <-- Page Components (PascalCase)
+│   │   ├── hooks/             <-- (optional) custom hooks theo feature
+│   │   ├── stores/            <-- (optional) Redux logic theo feature
+│   │   └── types/             <-- Zod Schemas & TS Types
+├── components/                <-- Shared Components (Button, Input)
+├── stores/                    <-- Global Store Configuration
+└── utils/                     <-- Shared Utilities
+```
+
+Ghi chú:
+- `stores/` **không bắt buộc** cho mọi feature.
+- Chỉ tạo `stores/` khi feature cần Redux state dùng lại giữa nhiều component/page hoặc cần async flow qua thunk/slice.
+- Feature nhỏ có thể chỉ cần `api/ + hooks/ + components/ + pages/ + types/ (+ utils)`.
+
+### Style Structure
+Từ phase hiện tại, style được chuẩn hoá về `src/styles` để dễ maintain và tránh vỡ UI khi chỉnh sửa màu/font.
+
+```text
+src/
+├── index.css                          <-- entry import style chính
+└── styles/
+    └── live-monitor/
+        ├── live-monitor-ui.css        <-- tokens chung (màu, font, text size, line-height, radius...)
+        ├── chat.css
+        ├── gift.css
+        └── stats.css
+```
+
+---
+
+## Performance Rules
+
+### 1. NO GENERIC BARREL FILES
+Không dùng `index.ts` chung chung để gom export (ảnh hưởng tree-shaking và khó trace import).
+Cho phép **barrel có tên rõ ràng** theo feature (vd: `liveMonitor.ts` trong `stores/`).
+
+*   **SAI:** `import { Button, Input } from '@/components';`
+*   **ĐÚNG:** `import { Button } from '@/components/ui/Button';`
+
+---
+
+## Redux Flow (Standard Thunk)
+
+Chúng ta sử dụng mô hình **Thunk** tiêu chuẩn (không dùng RTK Query cho dự án này).
+
+1.  **API Layer (`api/`)**: Chỉ chứa hàm gọi Axios, trả về Promise.
+2.  **Slice Layer (`slices/`)**:
+    *   Dùng `createAsyncThunk` để gọi API.
+    *   Dùng `extraReducers` để xử lý 3 trạng thái: `pending`, `fulfilled`, `rejected`.
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
+### Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Development
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Testing (Vitest)
+Test được đặt ngay trong thư mục feature (Colocation).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run test
+```
