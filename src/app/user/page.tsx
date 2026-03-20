@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-import LiveColumn from "@/components/LiveColumn";
+import LiveColumn from "@/features/us-live-monitor/components/LiveColumn";
 import * as FramerMotion from "framer-motion";
 const { motion, AnimatePresence } = FramerMotion;
-import { useAuth } from "@/lib/AuthContext";
-import { API_BASE } from "@/lib/auth";
-import DowngradeModal from "@/components/DowngradeModal";
+import { useAuth } from "@/features/shared-auth/stores/AuthContext";
+import { API_BASE } from "@/features/shared-auth/api/authApi";
+import DowngradeModal from "@/features/us-subscription/components/DowngradeModal";
 
 interface ActiveStream {
   id: number;

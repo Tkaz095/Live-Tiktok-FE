@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Clock, TrendingUp, Hash, User, ShieldAlert, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import type { GiftItem } from "./types";
+import type { GiftItem } from "../types/live.types";
 
 interface GiftFeedProps {
   gifts: GiftItem[];

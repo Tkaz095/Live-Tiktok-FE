@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 
 export default function Home() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function Home() {
     } else if (user.role_id === 1) {
       router.replace("/admin");
     } else {
-      router.replace("/customer");
+      router.replace("/user");
     }
   }, [user, isLoading, router]);
 

@@ -4,10 +4,10 @@ import Link from "next/link";
 import { Plus, LogOut, Zap, Crown, ChevronDown, Tv2, Radio } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { API_BASE } from "@/lib/auth";
-import PurchaseModal from "./PurchaseModal";
+import { API_BASE } from "@/features/shared-auth/api/authApi";
+import PurchaseModal from "@/features/us-subscription/components/PurchaseModal";
 
 interface Service {
   id: number;

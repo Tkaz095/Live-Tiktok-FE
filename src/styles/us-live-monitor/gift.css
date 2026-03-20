@@ -1,0 +1,4 @@
+/* gift.css */
+.gift-item {
+  @apply flex items-center gap-2 p-2 rounded-lg;
+}

@@ -3,16 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useAnimation, animate } from "framer-motion";
-import { createLiveSocket } from "@/lib/socket";
+import { createLiveSocket } from "@/features/us-live-monitor/api/socket";
 import type { Socket } from "socket.io-client";
 
-import BigGiftOverlay from "./live/BigGiftOverlay";
-import SessionStatsModal from "./live/SessionStatsModal";
-import LiveColumnHeader from "./live/LiveColumnHeader";
-import StatsBar from "./live/StatsBar";
-import GiftFeed from "./live/GiftFeed";
-import ChatFeed from "./live/ChatFeed";
-import { getCoinValue } from "./live/giftCoins";
+import BigGiftOverlay from "./BigGiftOverlay";
+import SessionStatsModal from "./SessionStatsModal";
+import LiveColumnHeader from "./LiveColumnHeader";
+import StatsBar from "./StatsBar";
+import GiftFeed from "./GiftFeed";
+import ChatFeed from "./ChatFeed";
+import { getCoinValue } from "../types/giftCoins.types";
 import type {
   ChatItem,
   GiftItem,
@@ -22,7 +22,7 @@ import type {
   LiveStatsData,
   MemberCountData,
   LikeData,
-} from "./live/types";
+} from "../types/live.types";
 
 interface LiveColumnProps {
   username: string;

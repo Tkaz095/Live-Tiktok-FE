@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, UserPlus, X, ArrowLeft } from "lucide-react";
-import { API_BASE } from "@/lib/auth";
+import { API_BASE } from "@/features/shared-auth/api/authApi";
 
 interface RegisterModalProps {
   isOpen: boolean;

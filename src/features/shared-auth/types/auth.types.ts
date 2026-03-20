@@ -46,6 +46,3 @@ export interface User {
   role_id: number; // 1 = admin, 2 = customer
   subscription: SubscriptionTier;
 }
-
-// ====== API BASE ======
-export const API_BASE = "http://localhost:4001/api/v1";

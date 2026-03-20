@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, SUBSCRIPTION_PLANS, SubscriptionInfo, API_BASE } from "./auth";
+import { User, SUBSCRIPTION_PLANS, SubscriptionInfo } from "../types/auth.types";
+import { API_BASE } from "../api/authApi";
 
 const STORAGE_KEY = "tiktok_monitor_user";
 

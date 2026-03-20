@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckCircle2, Loader2, QrCode, ShieldCheck, Zap, Crown } from "lucide-react";
-import { API_BASE } from "@/lib/auth";
-import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/features/shared-auth/api/authApi";
+import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 
 interface Service {
   id: number;

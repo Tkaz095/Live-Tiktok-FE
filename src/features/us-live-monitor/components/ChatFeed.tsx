@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Pin, PinOff, Trash2, X, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { ChatItem } from "./types";
+import type { ChatItem } from "../types/live.types";
 
 interface ChatFeedProps {
   chats: ChatItem[];

@@ -3,8 +3,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, TrendingUp, Users, MessageSquare, Heart, Coins, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
-import { API_BASE } from "@/lib/auth";
-import { useAuth } from "@/lib/AuthContext";
+import { API_BASE } from "@/features/shared-auth/api/authApi";
+import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 
 interface SessionStats {
   summary: {

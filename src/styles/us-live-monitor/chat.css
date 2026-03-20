@@ -1,0 +1,4 @@
+/* chat.css */
+.chat-message {
+  @apply text-sm leading-relaxed;
+}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function LoginForm({ onOpenRegister }: { onOpenRegister: () => void }) {
@@ -28,7 +28,7 @@ export default function LoginForm({ onOpenRegister }: { onOpenRegister: () => vo
       if (res.role_id === 1) {
         router.push("/admin");
       } else {
-        router.push("/customer");
+        router.push("/user");
       }
     } else {
       setError(res.error ?? "Đăng nhập thất bại.");

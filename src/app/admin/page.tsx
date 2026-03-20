@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, User, ChevronLeft, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/features/shared-auth/stores/AuthContext';
 
 export default function AdminPage() {
     const router = useRouter();
@@ -15,7 +15,7 @@ export default function AdminPage() {
             if (!user) {
                 router.push('/login');
             } else if (user.role_id !== 1) {
-                router.push('/customer');
+                router.push('/user');
             }
         }
     }, [user, isLoading, router]);

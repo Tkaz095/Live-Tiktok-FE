@@ -1,7 +1,7 @@
 "use client";
 
-import LoginForm from "@/components/auth/LoginForm";
-import RegisterModal from "@/components/auth/RegisterModal";
+import LoginForm from "@/features/shared-auth/components/LoginForm";
+import RegisterModal from "@/features/shared-auth/components/RegisterModal";
 import { useState } from "react";
 
 export default function LoginPage() {
