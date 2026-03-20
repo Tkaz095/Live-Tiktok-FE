@@ -1,7 +1,11 @@
-import Link from "next/link";
+"use client";
+
 import LoginForm from "@/components/auth/LoginForm";
+import RegisterModal from "@/components/auth/RegisterModal";
+import { useState } from "react";
 
 export default function LoginPage() {
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#070707] text-white">
       <div className="pointer-events-none absolute inset-0">
@@ -12,12 +16,6 @@ export default function LoginPage() {
 
       <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-stretch justify-center gap-12 px-6 py-14 lg:flex-row lg:items-center lg:gap-16">
         <div className="w-full max-w-xl space-y-7">
-          <Link
-            href="/"
-            className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/75 transition-all hover:border-tiktok-cyan/60 hover:text-tiktok-cyan hover:bg-tiktok-cyan/5"
-          >
-            <span className="transition-transform group-hover:-translate-x-1">←</span> Quay về dashboard
-          </Link>
 
           <div className="space-y-4">
             <p className="inline-flex rounded-full border border-tiktok-cyan/40 bg-tiktok-cyan/10 px-3 py-1 text-xs font-medium tracking-[0.16em] text-tiktok-cyan uppercase">
@@ -48,8 +46,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <LoginForm />
+        <LoginForm onOpenRegister={() => setIsRegisterOpen(true)} />
       </section>
+
+      <RegisterModal 
+        isOpen={isRegisterOpen} 
+        onClose={() => setIsRegisterOpen(false)} 
+      />
     </main>
   );
 }

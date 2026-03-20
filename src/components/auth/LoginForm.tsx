@@ -6,7 +6,7 @@ import { FormEvent, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 
-export default function LoginForm() {
+export default function LoginForm({ onOpenRegister }: { onOpenRegister: () => void }) {
   const router = useRouter();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -36,7 +36,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md rounded-3xl border border-white/15 bg-[linear-gradient(165deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_100%)] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:p-8">
+    <div className="w-full max-w-md rounded-3xl border border-white/20 bg-[linear-gradient(165deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_100%)] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.65)] backdrop-blur-2xl sm:p-8">
       <div className="mb-7 space-y-1.5">
         <h2 className="text-2xl font-semibold tracking-tight text-white">Đăng nhập</h2>
         <p className="text-sm text-white/60">Sử dụng tài khoản để đăng nhập vào hệ thống monitor.</p>
@@ -44,13 +44,13 @@ export default function LoginForm() {
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-white/85">Email / Tên đăng nhập</label>
+          <label className="text-sm font-medium text-white/85">Tên đăng nhập</label>
           <input
             required
             type="text"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="dien_ten_dang_nhap_vao_day"
+            placeholder="Nhập tên đăng nhập..."
             className="w-full rounded-2xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-tiktok-cyan"
           />
         </div>
@@ -95,17 +95,20 @@ export default function LoginForm() {
           <button type="button" onClick={() => { setEmail("admin"); setPassword("123456"); }} className="w-full rounded-xl border border-tiktok-cyan/30 bg-tiktok-cyan/10 py-2 text-xs font-semibold text-tiktok-cyan transition hover:bg-tiktok-cyan hover:text-black">
             Điền nhanh Admin
           </button>
-          <button type="button" onClick={() => { setEmail("customer"); setPassword("123456"); }} className="w-full rounded-xl border border-tiktok-pink/30 bg-tiktok-pink/10 py-2 text-xs font-semibold text-tiktok-pink transition hover:bg-tiktok-pink hover:text-white">
-            Điền nhanh Customer
+          <button type="button" onClick={() => { setEmail("user"); setPassword("123456"); }} className="w-full rounded-xl border border-tiktok-pink/30 bg-tiktok-pink/10 py-2 text-xs font-semibold text-tiktok-pink transition hover:bg-tiktok-pink hover:text-white">
+            Điền nhanh User
           </button>
         </div>
       </form>
 
       <p className="mt-6 text-center text-sm text-white/65">
         Chưa có tài khoản?{" "}
-        <Link href="/register" className="font-medium text-tiktok-yellow hover:text-tiktok-cyan underline decoration-tiktok-yellow/30 underline-offset-4">
+        <button
+          onClick={onOpenRegister}
+          className="font-medium text-tiktok-yellow hover:text-tiktok-cyan underline decoration-tiktok-yellow/30 underline-offset-4 transition-colors"
+        >
           Tạo tài khoản mới
-        </Link>
+        </button>
       </p>
     </div>
   );
