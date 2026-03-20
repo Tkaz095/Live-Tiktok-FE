@@ -16,6 +16,7 @@ interface AuthContextValue {
   updateSubscription: (maxLiveSlots: number) => void;
   downgradeTimer: number | null;
   setDowngradeTimer: (timer: number | null) => void;
+  updateUser: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -52,7 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: data.user.email,
           avatar: `https://api.dicebear.com/8.x/thumbs/svg?seed=${data.user.username}&backgroundColor=0d1117`,
           role_id,
-          subscription: role_id === 1 ? 'pro' : 'free'
+          subscription: role_id === 1 ? 'pro' : 'free',
+          data_storage_path: data.user.data_storage_path
         };
         setUser(mappedUser);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
@@ -89,8 +91,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const plan = user ? SUBSCRIPTION_PLANS[user.subscription] : null;
 
+  const updateUser = (data: Partial<User>) => {
+    if (!user) return;
+    const updated = { ...user, ...data };
+    setUser(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, plan, isLoading, login, logout, getToken, updateSubscription, downgradeTimer, setDowngradeTimer }}>
+    <AuthContext.Provider value={{ user, plan, isLoading, login, logout, getToken, updateSubscription, downgradeTimer, setDowngradeTimer, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -45,4 +45,5 @@ export interface User {
   avatar: string;
   role_id: number; // 1 = admin, 2 = customer
   subscription: SubscriptionTier;
+  data_storage_path?: string | null;
 }

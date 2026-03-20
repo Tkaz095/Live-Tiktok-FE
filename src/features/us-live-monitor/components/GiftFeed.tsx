@@ -73,24 +73,25 @@ export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
   return (
     <div
       className={`flex flex-col border-b border-tiktok-border bg-gradient-to-b from-[#1a1515] to-transparent min-h-0 ${
-        flex1 ? "flex-1" : "flex-none max-h-[40%] min-h-[120px]"
+        flex1 ? "flex-1" : "flex-none max-h-[50%] min-h-[120px]"
       }`}
     >
       <div className="px-3 py-2 flex items-center justify-between bg-black/40 shrink-0 border-b border-white/5 relative z-50">
-        <div className="flex items-center text-[10px] font-bold text-tiktok-yellow/90 gap-1.5 uppercase tracking-tighter">
-          <Gift size={13} className="text-tiktok-pink" />
-          Quà tặng
+        <div className="flex items-center text-xs font-black text-tiktok-yellow/90 gap-2 uppercase tracking-widest">
+          <Gift size={14} className="text-tiktok-pink" />
+          QUÀ TẶNG
         </div>
         
         <div className="relative">
           <button 
             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md border border-white/10 transition-all text-[10px] text-gray-300 shadow-sm"
+            className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/10 transition-all text-[10px] text-gray-300 shadow-sm"
           >
             {currentFilter?.icon}
-            <span className="max-w-[80px] truncate">{currentFilter?.label}</span>
             <ChevronDown size={10} className={`transition-transform duration-200 ${showFilterDropdown ? 'rotate-180' : ''}`} />
           </button>
+        </div>
+      </div>
 
           <AnimatePresence>
             {showFilterDropdown && (
@@ -127,8 +128,6 @@ export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
               </>
             )}
           </AnimatePresence>
-        </div>
-      </div>
       <div className="relative flex-1 min-h-0 overflow-hidden">
         <div
           ref={scrollRef}
@@ -146,10 +145,10 @@ export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
                   g.isBigGift
                     ? "from-tiktok-yellow/30 to-tiktok-pink/20 border-tiktok-yellow/50"
                     : "from-tiktok-yellow/10 to-transparent border-tiktok-yellow/20"
-                } border rounded-lg p-2 flex items-center justify-between shadow-sm`}
+                } border rounded-xl p-2 flex items-center justify-between shadow-lg`}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-black/40 shrink-0 flex items-center justify-center text-lg overflow-hidden border border-white/5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-black/40 shrink-0 flex items-center justify-center text-lg overflow-hidden border border-white/5 shadow-inner">
                     {g.icon.startsWith("http") ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={g.icon} alt={g.giftName} className="w-full h-full object-contain p-0.5" />

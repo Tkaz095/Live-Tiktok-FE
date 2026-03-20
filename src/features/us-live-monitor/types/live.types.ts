@@ -4,6 +4,7 @@ export interface ChatItem {
   id: string;
   user: string;
   message: string;
+  avatar?: string;
 }
 
 export interface GiftItem {
@@ -22,6 +23,7 @@ export interface TikTokChatData {
   username?: string;
   message?: string;
   chatCount?: number;
+  avatar?: string;
 }
 
 export interface TikTokGiftData {
@@ -45,6 +47,7 @@ export interface RoomInfoData {
   totalCoins?: number;
   chatCount?: number;
   hostNickname?: string;
+  hostAvatar?: string;
   hostFollowers?: number;
 }
 

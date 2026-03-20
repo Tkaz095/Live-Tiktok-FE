@@ -54,13 +54,13 @@ export default function ChatFeed({
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-[#0c0c0c]">
       {/* Header */}
-      <div className="px-3 py-2 flex items-center justify-between text-xs font-semibold text-tiktok-cyan/80 bg-black/40 relative shrink-0">
-        <div className="flex items-center gap-1.5">
+      <div className="px-3 py-2 flex items-center justify-between text-xs font-black text-tiktok-cyan/90 bg-black/40 relative shrink-0 border-b border-white/5 uppercase tracking-widest">
+        <div className="flex items-center gap-2">
           <MessageSquare size={14} />
           Chat trực tiếp
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-gray-500 font-normal">{totalChats.toLocaleString()} tin</span>
+          <span className="text-[10px] text-gray-500 font-bold tracking-tight">{totalChats.toLocaleString()} tin</span>
         </div>
       </div>
 
@@ -98,7 +98,7 @@ export default function ChatFeed({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="absolute inset-0 overflow-y-auto p-3 flex flex-col gap-1"
+          className="absolute inset-0 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar"
         >
           {/* Skeleton while not connected */}
           {!connected && orderedChats.length === 0 && (
@@ -126,18 +126,36 @@ export default function ChatFeed({
                   pinnedChat?.id === c.id ? "bg-tiktok-cyan/5 border-l-2 border-tiktok-cyan/50 pl-2" : ""
                 }`}
               >
-                {c.user !== "system" && (
-                  <span
-                    className={`font-semibold mr-1.5 cursor-pointer hover:underline ${
-                      index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
-                    }`}
-                  >
-                    {c.user}:
-                  </span>
-                )}
-                <span className={c.user === "system" ? "text-tiktok-yellow/80" : "text-gray-200"}>
-                  {c.message}
-                </span>
+                <div className="flex items-start gap-2">
+                  {c.user !== "system" && (
+                    <div className="w-6 h-6 rounded-full shrink-0 mt-0.5 overflow-hidden border border-white/10 bg-white/5 shadow-sm">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={c.avatar || `https://api.dicebear.com/8.x/thumbs/svg?seed=${encodeURIComponent(c.user)}&backgroundColor=0d1117`} 
+                        alt={c.user}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/8.x/thumbs/svg?seed=${encodeURIComponent(c.user)}&backgroundColor=0d1117`;
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 min-w-0">
+                    {c.user !== "system" && (
+                      <span
+                        className={`font-bold mr-2 cursor-pointer hover:underline text-xs ${
+                          index % 2 === 0 ? "text-tiktok-cyan" : "text-blue-400"
+                        }`}
+                      >
+                        {c.user}:
+                      </span>
+                    )}
+                    <span className={`text-xs ${c.user === "system" ? "text-tiktok-yellow/90 italic font-medium" : "text-gray-100"}`}>
+                      {c.message}
+                    </span>
+                  </div>
+                </div>
 
                 {/* Hover actions */}
                 {c.user !== "system" && (

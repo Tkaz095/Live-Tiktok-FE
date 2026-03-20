@@ -7,9 +7,7 @@ import { createLiveSocket } from "@/features/us-live-monitor/api/socket";
 import type { Socket } from "socket.io-client";
 
 import BigGiftOverlay from "./BigGiftOverlay";
-import SessionStatsModal from "./SessionStatsModal";
 import LiveColumnHeader from "./LiveColumnHeader";
-import StatsBar from "./StatsBar";
 import GiftFeed from "./GiftFeed";
 import ChatFeed from "./ChatFeed";
 import { getCoinValue } from "../types/giftCoins.types";
@@ -27,7 +25,9 @@ import type {
 interface LiveColumnProps {
   username: string;
   sessionId?: number;
+  initialAvatar?: string;
   onClose: (username: string) => void;
+  onShowStats?: () => void;
 }
 
 function getAvatar(username: string) {
@@ -41,12 +41,11 @@ function formatNumber(num: number) {
   return num.toString();
 }
 
-export default function LiveColumn({ username, sessionId, onClose }: LiveColumnProps) {
+export default function LiveColumn({ username, sessionId, initialAvatar, onClose, onShowStats }: LiveColumnProps) {
   const [filter, setFilter] = useState<"all" | "gift" | "chat">("all");
   const [connected, setConnected] = useState(false);
   const [isConnectingTiktok, setIsConnectingTiktok] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showStats, setShowStats] = useState(false);
 
   const [viewers, setViewers] = useState(0);
   const [likes, setLikes] = useState(0);
@@ -56,6 +55,7 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
   const [totalChats, setTotalChats] = useState(0);
   const [isLiveEnded, setIsLiveEnded] = useState(false);
   const [hostNickname, setHostNickname] = useState(username);
+  const [hostAvatar, setHostAvatar] = useState<string | null>(initialAvatar || null);
   const [hostFollowers, setHostFollowers] = useState<number | null>(null);
   const [syncCount, setSyncCount] = useState(0);
   const [reconnectKey, setReconnectKey] = useState(0);
@@ -126,6 +126,7 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
         id: d.id || Math.random().toString(36).substring(7),
         user: d.user || d.username || "unknown",
         message: d.message || "",
+        avatar: d.avatar,
       }));
       setChats(mapped.slice(0, 100));
     });
@@ -136,6 +137,7 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
         id: data.id || Math.random().toString(36).substring(7),
         user: data.username ?? data.user ?? "unknown",
         message: data.message ?? "",
+        avatar: data.avatar,
       };
       if (typeof data.chatCount === "number") {
         setTotalChats(data.chatCount);
@@ -177,7 +179,7 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
         if (existingIndex !== -1) {
           const updatedGifts = [...prev];
           const existing = updatedGifts[existingIndex];
-          
+
           // TikTok's repeatCount is a running total for the current streak.
           // If the new count is 1, it's likely a new streak, so we add it.
           // If it's > 1, it's a continuation, so we take the max of existing and new.
@@ -220,6 +222,7 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
       if (typeof data.totalCoins === "number") setCoins(data.totalCoins);
       if (typeof data.chatCount === "number") setTotalChats(data.chatCount);
       if (data.hostNickname) setHostNickname(data.hostNickname);
+      if (data.hostAvatar) setHostAvatar(data.hostAvatar);
       if (typeof data.hostFollowers === "number") setHostFollowers(data.hostFollowers);
     });
 
@@ -319,7 +322,7 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
       animate={columnControls}
       exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
       layout
-      className="w-[320px] shrink-0 h-full flex flex-col bg-tiktok-card rounded-xl border border-tiktok-border overflow-hidden relative group"
+      className="w-[380px] shrink-0 h-full flex flex-col bg-tiktok-card rounded-[12px] border border-tiktok-border overflow-hidden relative group shadow-2xl transition-all hover:border-tiktok-cyan/20"
     >
       <BigGiftOverlay currentBigGift={currentBigGift} controls={bigGiftIconControls} />
 
@@ -333,7 +336,7 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
         error={error}
         syncCount={syncCount}
         displayCoins={displayCoins}
-        avatar={avatar}
+        avatar={hostAvatar || getAvatar(username)}
         formatNumber={formatNumber}
         onReconnect={() => {
           setConnected(false);
@@ -341,37 +344,23 @@ export default function LiveColumn({ username, sessionId, onClose }: LiveColumnP
           setIsConnectingTiktok(true);
           setReconnectKey((k) => k + 1);
         }}
-        onShowStats={() => setShowStats(true)}
+        onShowStats={onShowStats || (() => { })}
         onClose={() => onClose(username)}
-      />
-
-      <SessionStatsModal
-        isOpen={showStats}
-        onClose={() => setShowStats(false)}
-        sessionId={sessionId || 0}
-        username={username}
-      />
-
-      <StatsBar
         viewers={viewers}
         displayLikes={displayLikes}
-        connected={connected}
-        isConnectingTiktok={isConnectingTiktok}
-        error={error}
-        formatNumber={formatNumber}
       />
 
+
       {/* Tabs */}
-      <div className="flex border-b border-tiktok-border/60 bg-[#121212] shrink-0 text-xs mt-1">
+      <div className="flex border-b border-tiktok-border bg-tiktok-surface shrink-0 text-xs font-black uppercase tracking-widest px-1 py-2">
         {(["all", "chat", "gift"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
-            className={`flex-1 py-2 text-center transition-colors border-b-2 ${
-              filter === tab
-                ? "border-tiktok-cyan text-tiktok-cyan font-bold bg-white/5"
-                : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/5"
-            }`}
+            className={`flex-1 py-2 text-center transition-all rounded-xl ${filter === tab
+                ? "bg-tiktok-cyan text-black shadow-[0_0_15px_rgba(37,244,238,0.3)]"
+                : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+              }`}
           >
             {tab === "all" ? "Tất cả" : tab === "chat" ? "Chat" : "Quà tặng"}
           </button>
