@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Settings, Shield, Moon, Sun, Monitor, HardDrive, Mail, Lock, Save, Globe } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import FolderPickerModal from "@/components/FolderPickerModal";
 import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 import { useTheme } from "@/features/shared-theme/ThemeContext";
 import { API_BASE } from "@/features/shared-auth/api/authApi";
@@ -14,6 +15,7 @@ export default function SettingsPage() {
   const [saveLocation, setSaveLocation] = useState(user?.data_storage_path || "C:/Users/TikTok-Monitor/Data");
   const [isSaving, setIsSaving] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("appearance");
 
   // Sync saveLocation when user data is loaded (Fix F5 loss)
@@ -31,34 +33,13 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSelectDirectory = async () => {
-    if (isSelecting) return;
-    setIsSelecting(true);
-    
-    // Show status message via button text
-    
-    try {
-      const token = getToken();
-      const res = await fetch(`${API_BASE}/system/select-directory`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
-      }
+  const handleSelectDirectory = () => {
+    setIsModalOpen(true);
+  };
 
-      const data = await res.json();
-      if (data.success && data.path) {
-        setSaveLocation(data.path);
-      } else if (data.success === false && data.message) {
-        console.log("Directory selection info:", data.message);
-      }
-    } catch (error: any) {
-      alert(`Lỗi: ${error.message || "Không thể mở hộp thoại chọn thư mục."}`);
-    } finally {
-      setIsSelecting(false);
-    }
+  const onFolderSelect = (path: string) => {
+    setSaveLocation(path);
+    setIsModalOpen(false);
   };
 
   const handleSave = async () => {
@@ -282,6 +263,14 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
+
+      <FolderPickerModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelect={onFolderSelect}
+        initialPath={saveLocation}
+        token={getToken()}
+      />
     </div>
   );
 }
