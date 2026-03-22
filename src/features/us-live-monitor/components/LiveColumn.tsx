@@ -28,6 +28,7 @@ interface LiveColumnProps {
   initialAvatar?: string;
   onClose: (username: string) => void;
   onShowStats?: () => void;
+  directoryHandle?: any;
 }
 
 function getAvatar(username: string) {
@@ -41,7 +42,7 @@ function formatNumber(num: number) {
   return num.toString();
 }
 
-export default function LiveColumn({ username, sessionId, initialAvatar, onClose, onShowStats }: LiveColumnProps) {
+export default function LiveColumn({ username, sessionId, initialAvatar, onClose, onShowStats, directoryHandle }: LiveColumnProps) {
   const [filter, setFilter] = useState<"all" | "gift" | "chat">("all");
   const [connected, setConnected] = useState(false);
   const [isConnectingTiktok, setIsConnectingTiktok] = useState(true);
@@ -96,6 +97,40 @@ export default function LiveColumn({ username, sessionId, initialAvatar, onClose
       .then(() => setCurrentBigGift(null));
   };
 
+  const saveToLocalFile = async (type: "chat" | "gift", data: any) => {
+    const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+    if (!directoryHandle || !sessionId || isLocalhost) return;
+    try {
+      const sessionDirName = `session_${sessionId}`;
+      const sessionDir = await directoryHandle.getDirectoryHandle(sessionDirName, { create: true });
+      const fileName = type === "chat" ? "comments.json" : "gifts.json";
+      const fileHandle = await sessionDir.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable({ keepExistingData: true });
+      const timestamp = new Date().toISOString();
+      let logEntry;
+      if (type === "chat") {
+        logEntry = {
+          timestamp,
+          user: data.username || data.user,
+          comment: data.comment || data.message
+        };
+      } else {
+        logEntry = {
+          timestamp,
+          user: data.username || data.user,
+          gift: data.gift_name || data.name,
+          quantity: data.count || data.repeatCount || 1,
+          coins: data.diamond_value || data.diamondCount || 0
+        };
+      }
+      const file = await fileHandle.getFile();
+      await writable.write({ type: "write", position: file.size, data: JSON.stringify(logEntry) + "\n" });
+      await writable.close();
+    } catch (err) {
+      console.error("[LocalSave Error]", err);
+    }
+  };
+
   // ── Socket ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const socket = createLiveSocket();
@@ -148,6 +183,8 @@ export default function LiveColumn({ username, sessionId, initialAvatar, onClose
         if (prev.some((c) => c.id === newChat.id)) return prev;
         return [newChat, ...prev].slice(0, 100);
       });
+      // Save to local file if on Free plan
+      if (directoryHandle) saveToLocalFile("chat", data);
     });
 
     socket.on("gift", (data: TikTokGiftData) => {
@@ -212,6 +249,9 @@ export default function LiveColumn({ username, sessionId, initialAvatar, onClose
         setCoins((prev) => prev + totalValue);
       }
       if (isBigGift) triggerBigGift(icon, giftName);
+
+      // Save to local file if on Free plan
+      if (directoryHandle) saveToLocalFile("gift", data);
     });
 
     socket.on("room_info", (data: RoomInfoData) => {
