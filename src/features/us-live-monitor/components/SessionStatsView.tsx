@@ -108,28 +108,38 @@ export default function SessionStatsView({ sessionId, username }: SessionStatsVi
       <div className="hidden md:block w-px bg-white/5 self-stretch" />
 
       {/* Top Gifters */}
-      <div className="w-full md:w-[320px] shrink-0 flex flex-col">
-        <h3 className="text-[10px] font-bold text-tiktok-yellow uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-          <Trophy size={14} />
+      <div className="w-full md:w-[320px] shrink-0 flex flex-col bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 relative overflow-hidden group/gifters h-[180px]">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-tiktok-yellow/10 blur-[40px] rounded-full opacity-30 group-hover/gifters:opacity-60 transition-opacity duration-700"></div>
+        <h3 className="relative z-10 text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-tiktok-yellow to-orange-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 drop-shadow-sm">
+          <Trophy size={16} className="text-tiktok-yellow" />
           Đại gia của phiên
         </h3>
-        <div className="flex-1 min-h-[140px] max-h-[140px] overflow-y-auto custom-scrollbar bg-black/20 rounded-xl border border-white/5">
+        <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
           {(stats.top_gifters?.length ?? 0) > 0 ? (
             stats.top_gifters?.map((g, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-2 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors">
+              <div key={i} className="flex items-center justify-between px-3 py-2 bg-white/[0.03] rounded-xl border border-white/[0.05] hover:bg-white/[0.08] hover:border-white/[0.15] hover:shadow-[0_0_15px_rgba(255,255,255,0.03)] transition-all duration-300 group">
                 <div className="flex items-center gap-3">
-                  <span className={`w-5 text-xs font-bold ${i === 0 ? 'text-tiktok-yellow' : i === 1 ? 'text-gray-400' : 'text-orange-400'}`}>
-                    #{i + 1}
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-black ${
+                    i === 0 ? 'bg-tiktok-yellow/20 text-tiktok-yellow ring-1 ring-tiktok-yellow/50 shadow-[0_0_10px_rgba(250,206,21,0.3)]' : 
+                    i === 1 ? 'bg-gray-300/20 text-gray-300 ring-1 ring-gray-400/50' : 
+                    i === 2 ? 'bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/50' : 
+                    'bg-white/5 text-gray-500'
+                  }`}>
+                    {i + 1}
                   </span>
-                  <span className="text-[13px] font-medium text-white/90 truncate max-w-[120px]">{g.sender_name}</span>
+                  <span className="text-[13px] font-semibold text-white/80 truncate max-w-[120px] group-hover:text-white transition-colors">{g.sender_name}</span>
                 </div>
-                <div className="text-right">
-                  <p className="text-[13px] font-bold text-tiktok-yellow">{g.total_coins?.toLocaleString() ?? 0} xu</p>
+                <div className="text-right flex items-center gap-1.5">
+                  <p className="text-[13px] font-black text-tiktok-yellow/90 group-hover:text-tiktok-yellow drop-shadow-sm transition-colors">{g.total_coins?.toLocaleString() ?? 0}</p>
+                  <Coins size={12} className="text-tiktok-yellow/60 group-hover:text-tiktok-yellow/100" />
                 </div>
               </div>
             ))
           ) : (
-            <p className="px-4 py-8 text-center text-xs text-gray-600">Chưa có quà tặng nào.</p>
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-60">
+               <Trophy size={28} className="mb-2 text-white/20" />
+               <p className="text-xs text-white/40 font-medium tracking-wide">Chưa có quà tặng nào.</p>
+            </div>
           )}
         </div>
       </div>
@@ -145,13 +155,14 @@ function StatCard({ icon, label, value, colorClass, bgColorClass }: {
   bgColorClass: string 
 }) {
   return (
-    <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-4 flex items-center gap-4 group hover:border-white/10 transition-colors h-full">
-      <div className={`w-10 h-10 rounded-xl ${bgColorClass} flex items-center justify-center ${colorClass} shrink-0`}>
+    <div className="relative overflow-hidden bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 flex items-center gap-4 group hover:border-white/30 hover:shadow-[0_8_30px_rgba(255,255,255,0.06)] transition-all duration-300 transform hover:-translate-y-1 h-[100px]">
+      <div className={`absolute top-0 right-0 w-24 h-24 ${bgColorClass} blur-[40px] opacity-30 -mr-6 -mt-6 rounded-full transition-opacity duration-500 group-hover:opacity-70`}></div>
+      <div className={`relative z-10 w-12 h-12 rounded-xl ${bgColorClass} flex items-center justify-center ${colorClass} shrink-0 shadow-lg ring-1 ring-white/10 group-hover:scale-110 transition-transform duration-300`}>
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="text-[10px] text-gray-500 uppercase font-black tracking-wider mb-1">{label}</p>
-        <p className="text-xl font-black text-white leading-tight truncate">{value.toLocaleString()}</p>
+      <div className="relative z-10 min-w-0">
+        <p className="text-[11px] text-gray-400 uppercase font-black tracking-widest mb-1 group-hover:text-gray-300 transition-colors">{label}</p>
+        <p className="text-2xl font-black text-white leading-tight truncate drop-shadow-md">{value.toLocaleString()}</p>
       </div>
     </div>
   );
