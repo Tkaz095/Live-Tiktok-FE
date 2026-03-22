@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import DataTable from '../components/DataTable';
+import DataTable, { Column } from '../components/DataTable';
 import Modal from '../components/Modal';
 import { 
   Package, 
@@ -35,7 +35,7 @@ export default function PackageManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState<PackageData | null>(null);
 
-  const columns = [
+  const columns: Column<PackageData>[] = [
     { 
       header: 'Gói dịch vụ', 
       accessor: (p: PackageData) => (
