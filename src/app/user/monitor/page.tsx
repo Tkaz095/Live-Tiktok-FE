@@ -35,6 +35,30 @@ export default function MonitorPage() {
   const [limitHit, setLimitHit] = useState(false);
   const [selectedStreamId, setSelectedStreamId] = useState<number | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [directoryHandle, setDirectoryHandle] = useState<any>(null);
+  const [showStorageModal, setShowStorageModal] = useState(false);
+  const [pendingJoinUrl, setPendingJoinUrl] = useState<string | null>(null);
+
+  const handleConfirmStorage = async () => {
+    const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
+    try {
+      if (!isLocalhost) {
+        const handle = await (window as any).showDirectoryPicker();
+        setDirectoryHandle(handle);
+      } else {
+        // Set a dummy value to pass the check in handleJoinAction
+        setDirectoryHandle("local_authorized");
+      }
+      setShowStorageModal(false);
+      if (pendingJoinUrl) {
+        handleJoinAction(pendingJoinUrl, true); // Use bypassGate=true
+        setPendingJoinUrl(null);
+      }
+    } catch (err) {
+      console.warn("User cancelled directory picker:", err);
+      setError("Bạn cần chọn thư mục để tiếp tục (Bản Miễn phí).");
+    }
+  };
 
   const fetchActiveStreams = useCallback(async () => {
     try {
@@ -64,7 +88,7 @@ export default function MonitorPage() {
     }
   }, [user, isLoading, router, fetchActiveStreams]);
 
-  const handleJoinAction = async (inputUrl?: string) => {
+  const handleJoinAction = async (inputUrl?: string, bypassGate = false) => {
     const targetUrl = inputUrl || url;
     if (!targetUrl.trim()) return;
 
@@ -80,6 +104,13 @@ export default function MonitorPage() {
 
     if (!username) return;
     setError(null);
+
+    // Each new join action requires a confirmation if on Free plan
+    if (user?.subscription === "free" && !bypassGate) {
+      setPendingJoinUrl(targetUrl);
+      setShowStorageModal(true);
+      return;
+    }
 
     try {
       const token = getToken();
@@ -256,6 +287,7 @@ export default function MonitorPage() {
                       username={stream.tiktok_handle}
                       sessionId={stream.id}
                       initialAvatar={stream.avatar_url}
+                      directoryHandle={directoryHandle}
                       onShowStats={() => setSelectedStreamId(stream.id)}
                       onClose={() => {
                         handleClose(stream.id);
@@ -329,6 +361,64 @@ export default function MonitorPage() {
         onClose={() => setShowDowngradeModal(false)}
         secondsRemaining={downgradeTimer ?? 0}
       />
+
+      {/* Storage Permission Modal */}
+      <AnimatePresence>
+        {showStorageModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowStorageModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-tiktok-card border border-tiktok-border rounded-[32px] p-8 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-tiktok-cyan to-transparent" />
+              
+              <div className="flex flex-col items-center text-center gap-6">
+                <div className="w-20 h-20 rounded-3xl bg-tiktok-cyan/10 border border-tiktok-cyan/20 flex items-center justify-center text-tiktok-cyan mb-2">
+                  <Layout size={40} />
+                </div>
+                
+                <div>
+                  <h2 className="text-2xl font-black text-white mb-2 leading-tight">Yêu cầu quyền Truy cập Thư mục</h2>
+                  <p className="text-gray-400 text-sm leading-relaxed px-4">
+                    Vì bạn đang sử dụng <span className="text-tiktok-cyan font-bold">Gói Miễn phí</span>, dữ liệu Live Log sẽ được lưu trực tiếp vào máy của bạn tại:
+                  </p>
+                  <div className="mt-4 p-3 bg-black/40 rounded-xl border border-white/5 font-mono text-[11px] text-tiktok-cyan select-all break-all">
+                    {user?.data_storage_path || 'C:\\Tiktok Monitor'}
+                  </div>
+                </div>
+
+                <div className="w-full flex flex-col gap-3 mt-4">
+                  <button
+                    onClick={handleConfirmStorage}
+                    className="w-full bg-tiktok-cyan text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(37,244,238,0.3)]"
+                  >
+                    Xác nhận & Cấp quyền
+                  </button>
+                  <button
+                    onClick={() => setShowStorageModal(false)}
+                    className="w-full bg-white/5 text-gray-400 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5"
+                  >
+                    Bỏ qua
+                  </button>
+                </div>
+                
+                <p className="text-[10px] text-gray-500 italic mt-2">
+                  * Trình duyệt sẽ yêu cầu bạn xác nhận thư mục thêm một lần nữa.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
