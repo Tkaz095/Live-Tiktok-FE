@@ -108,6 +108,17 @@ Chúng ta sử dụng mô hình **Thunk** tiêu chuẩn (không dùng RTK Query 
 
 ---
 
+## Hướng dẫn sử dụng (How to Use)
+
+Sau khi khởi động cả Frontend và Backend, hãy thực hiện các bước sau:
+
+1.  **Đăng nhập**: Sử dụng tài khoản Demo hoặc đăng ký mới tại trang `/login`.
+2.  **Thêm TikToker**: Vào mục "Quản lý TikToker" để thêm @ID TikTok bạn muốn monitor.
+3.  **Bắt đầu Monitor**: Nhấn vào nút "Xem Live" của một TikToker. FE sẽ gửi yêu cầu tới Backend để khởi tạo kết nối.
+4.  **Theo dõi Real-time**: Khi Backend kết nối thành công, màn hình sẽ hiển thị số người xem, lượt tim và danh sách quà tặng/chat cập nhật liên tục mà không cần load lại trang.
+
+---
+
 ## Getting Started
 
 ### Installation
