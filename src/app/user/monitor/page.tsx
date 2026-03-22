@@ -10,7 +10,7 @@ const { motion, AnimatePresence } = FramerMotion;
 import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 import { API_BASE } from "@/features/shared-auth/api/authApi";
 import DowngradeModal from "@/features/us-subscription/components/DowngradeModal";
-import { Plus, Search, Layout } from "lucide-react";
+import { Plus, Search, Layout, Shield } from "lucide-react";
 import SessionStatsView from "@/features/us-live-monitor/components/SessionStatsView";
 import AddStreamModal from "@/features/us-live-monitor/components/AddStreamModal";
 
@@ -40,18 +40,29 @@ export default function MonitorPage() {
   const [pendingJoinUrl, setPendingJoinUrl] = useState<string | null>(null);
 
   const handleConfirmStorage = async () => {
-    const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
     try {
-      if (!isLocalhost) {
-        const handle = await (window as any).showDirectoryPicker();
-        setDirectoryHandle(handle);
-      } else {
-        // Set a dummy value to pass the check in handleJoinAction
-        setDirectoryHandle("local_authorized");
+      const handle = await (window as any).showDirectoryPicker();
+      
+      // [FIX] SecurityError: Refresh permission within this user-activated click event
+      if (await handle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+        await handle.requestPermission({ mode: 'readwrite' });
       }
+
+      // Prime for existing active streams to ensure they can keep writing
+      const dateStr = new Date().toISOString().split('T')[0];
+      for (const stream of activeStreams) {
+        try {
+          const sessionDirName = `${stream.tiktok_handle}_${dateStr}_ID${stream.id}`;
+          await handle.getDirectoryHandle(sessionDirName, { create: true });
+        } catch (e) {
+          console.warn("Failed to prime folder for stream:", stream.id, e);
+        }
+      }
+
+      setDirectoryHandle(handle);
       setShowStorageModal(false);
       if (pendingJoinUrl) {
-        handleJoinAction(pendingJoinUrl, true); // Use bypassGate=true
+        handleJoinAction(pendingJoinUrl, true);
         setPendingJoinUrl(null);
       }
     } catch (err) {
@@ -250,6 +261,7 @@ export default function MonitorPage() {
     <div className="flex flex-col h-screen w-full overflow-hidden bg-black text-white font-sans">
       <Navbar
         activeCount={activeStreams.length}
+        directoryHandle={directoryHandle}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -289,6 +301,7 @@ export default function MonitorPage() {
                       initialAvatar={stream.avatar_url}
                       directoryHandle={directoryHandle}
                       onShowStats={() => setSelectedStreamId(stream.id)}
+                      onReauthorize={() => setShowStorageModal(true)}
                       onClose={() => {
                         handleClose(stream.id);
                         if (selectedStreamId === stream.id) setSelectedStreamId(null);
@@ -387,33 +400,50 @@ export default function MonitorPage() {
                 </div>
                 
                 <div>
-                  <h2 className="text-2xl font-black text-white mb-2 leading-tight">Yêu cầu quyền Truy cập Thư mục</h2>
+                  <h2 className="text-2xl font-black text-white mb-2 leading-tight">Thiết lập Lưu trữ Cục bộ</h2>
                   <p className="text-gray-400 text-sm leading-relaxed px-4">
-                    Vì bạn đang sử dụng <span className="text-tiktok-cyan font-bold">Gói Miễn phí</span>, dữ liệu Live Log sẽ được lưu trực tiếp vào máy của bạn tại:
+                    Để đạt hiệu suất tốt nhất và bảo mật dữ liệu, bạn cần cấp quyền cho hệ thống ghi Log vào thư mục bên dưới:
                   </p>
-                  <div className="mt-4 p-3 bg-black/40 rounded-xl border border-white/5 font-mono text-[11px] text-tiktok-cyan select-all break-all">
-                    {user?.data_storage_path || 'C:\\Tiktok Monitor'}
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="p-3 bg-black/40 rounded-xl border border-white/5 font-mono text-[11px] text-tiktok-cyan select-all break-all flex items-center justify-between group">
+                      <span>{user?.data_storage_path || 'C:\\Tiktok Monitor'}</span>
+                      <Shield size={14} className="text-tiktok-cyan/50" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="w-full flex flex-col gap-3 mt-4">
+                <div className="w-full bg-white/5 rounded-2xl p-4 text-left border border-white/5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-tiktok-cyan/20 flex items-center justify-center text-[10px] font-bold text-tiktok-cyan mt-0.5 shrink-0">1</div>
+                    <p className="text-[11px] text-gray-300">Bấm <strong>"Kích hoạt & Chọn thư mục"</strong> bên dưới.</p>
+                  </div>
+                  <div className="flex items-start gap-3 mt-3">
+                    <div className="w-5 h-5 rounded-full bg-tiktok-cyan/20 flex items-center justify-center text-[10px] font-bold text-tiktok-cyan mt-0.5 shrink-0">2</div>
+                    <p className="text-[11px] text-gray-300">Chọn đúng thư mục trong bảng điều khiển của Trình duyệt để xác thực.</p>
+                  </div>
+                </div>
+
+                <div className="w-full flex flex-col gap-3 mt-2">
                   <button
                     onClick={handleConfirmStorage}
-                    className="w-full bg-tiktok-cyan text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(37,244,238,0.3)]"
+                    className="w-full bg-tiktok-cyan text-black py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(37,244,238,0.3)] flex items-center justify-center gap-2"
                   >
-                    Xác nhận & Cấp quyền
+                    Kích hoạt & Chọn thư mục
                   </button>
                   <button
                     onClick={() => setShowStorageModal(false)}
                     className="w-full bg-white/5 text-gray-400 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5"
                   >
-                    Bỏ qua
+                    Để sau
                   </button>
                 </div>
                 
-                <p className="text-[10px] text-gray-500 italic mt-2">
-                  * Trình duyệt sẽ yêu cầu bạn xác nhận thư mục thêm một lần nữa.
-                </p>
+                <div className="flex items-center gap-2 opacity-50">
+                  <Shield size={10} className="text-tiktok-cyan" />
+                  <p className="text-[9px] text-gray-500 uppercase tracking-tighter">
+                    Bảo mật tuyệt đối bởi quyền truy duyệt Sandbox
+                  </p>
+                </div>
               </div>
             </motion.div>
           </div>

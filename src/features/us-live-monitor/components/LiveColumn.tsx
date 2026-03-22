@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { useAnimation, animate } from "framer-motion";
+import { motion, AnimatePresence, useAnimation, animate } from "framer-motion";
+import { Shield } from "lucide-react";
 import { createLiveSocket } from "@/features/us-live-monitor/api/socket";
 import type { Socket } from "socket.io-client";
 
@@ -29,6 +29,7 @@ interface LiveColumnProps {
   onClose: (username: string) => void;
   onShowStats?: () => void;
   directoryHandle?: any;
+  onReauthorize?: () => void;
 }
 
 function getAvatar(username: string) {
@@ -42,11 +43,12 @@ function formatNumber(num: number) {
   return num.toString();
 }
 
-export default function LiveColumn({ username, sessionId, initialAvatar, onClose, onShowStats, directoryHandle }: LiveColumnProps) {
+export default function LiveColumn({ username, sessionId, initialAvatar, onClose, onShowStats, directoryHandle, onReauthorize }: LiveColumnProps) {
   const [filter, setFilter] = useState<"all" | "gift" | "chat">("all");
   const [connected, setConnected] = useState(false);
   const [isConnectingTiktok, setIsConnectingTiktok] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState(false);
 
   const [viewers, setViewers] = useState(0);
   const [likes, setLikes] = useState(0);
@@ -69,6 +71,10 @@ export default function LiveColumn({ username, sessionId, initialAvatar, onClose
   const bigGiftIconControls = useAnimation();
   const [currentBigGift, setCurrentBigGift] = useState<{ icon: string; name: string } | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  
+  // Storage Write Queue to prevent .crswap buildup
+  const writeQueue = useRef<(() => Promise<void>)[]>([]);
+  const isProcessingQueue = useRef(false);
 
   const triggerSyncSync = () => setSyncCount((c) => c + 1);
 
@@ -97,38 +103,62 @@ export default function LiveColumn({ username, sessionId, initialAvatar, onClose
       .then(() => setCurrentBigGift(null));
   };
 
-  const saveToLocalFile = async (type: "chat" | "gift", data: any) => {
-    const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost";
-    if (!directoryHandle || !sessionId || isLocalhost) return;
-    try {
-      const sessionDirName = `session_${sessionId}`;
-      const sessionDir = await directoryHandle.getDirectoryHandle(sessionDirName, { create: true });
-      const fileName = type === "chat" ? "comments.json" : "gifts.json";
-      const fileHandle = await sessionDir.getFileHandle(fileName, { create: true });
-      const writable = await fileHandle.createWritable({ keepExistingData: true });
-      const timestamp = new Date().toISOString();
-      let logEntry;
-      if (type === "chat") {
-        logEntry = {
-          timestamp,
-          user: data.username || data.user,
-          comment: data.comment || data.message
-        };
-      } else {
-        logEntry = {
-          timestamp,
-          user: data.username || data.user,
-          gift: data.gift_name || data.name,
-          quantity: data.count || data.repeatCount || 1,
-          coins: data.diamond_value || data.diamondCount || 0
-        };
-      }
-      const file = await fileHandle.getFile();
-      await writable.write({ type: "write", position: file.size, data: JSON.stringify(logEntry) + "\n" });
-      await writable.close();
-    } catch (err) {
-      console.error("[LocalSave Error]", err);
+  const processQueue = async () => {
+    if (isProcessingQueue.current || writeQueue.current.length === 0) return;
+    isProcessingQueue.current = true;
+    while (writeQueue.current.length > 0) {
+      const task = writeQueue.current.shift();
+      if (task) await task();
     }
+    isProcessingQueue.current = false;
+  };
+
+  const saveToLocalFile = async (type: "chat" | "gift", data: any) => {
+    if (!directoryHandle || !sessionId) return;
+    
+    // Push the write task to the queue
+    writeQueue.current.push(async () => {
+      try {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const sessionDirName = `${username}_${dateStr}_ID${sessionId}`;
+        const sessionDir = await directoryHandle.getDirectoryHandle(sessionDirName, { create: true });
+        const fileName = type === "chat" ? "comments.json" : "gifts.json";
+        const fileHandle = await sessionDir.getFileHandle(fileName, { create: true });
+        
+        const writable = await fileHandle.createWritable({ keepExistingData: true });
+        const file = await fileHandle.getFile();
+        const offset = file.size;
+        
+        let logEntry;
+        const timestamp = new Date().toISOString();
+        if (type === "chat") {
+          logEntry = {
+            timestamp,
+            user: data.username || data.user,
+            comment: data.comment || data.message
+          };
+        } else {
+          logEntry = {
+            timestamp,
+            user: data.username || data.user,
+            gift: data.gift_name || data.name,
+            quantity: data.count || data.repeatCount || 1,
+            coins: data.diamond_value || data.diamondCount || 0
+          };
+        }
+        
+        await writable.write({ type: "write", position: offset, data: JSON.stringify(logEntry) + "\n" });
+        await writable.close();
+        if (syncError) setSyncError(false);
+      } catch (err: any) {
+        console.error("[LocalSave Error]", err);
+        if (err.name === 'SecurityError' || err.name === 'NotAllowedError') {
+          setSyncError(true);
+        }
+      }
+    });
+
+    processQueue();
   };
 
   // ── Socket ──────────────────────────────────────────────────────────────────
@@ -365,6 +395,30 @@ export default function LiveColumn({ username, sessionId, initialAvatar, onClose
       className="w-[380px] shrink-0 h-full flex flex-col bg-tiktok-card rounded-[12px] border border-tiktok-border overflow-hidden relative group shadow-2xl transition-all hover:border-tiktok-cyan/20"
     >
       <BigGiftOverlay currentBigGift={currentBigGift} controls={bigGiftIconControls} />
+
+      <AnimatePresence>
+        {syncError && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center"
+          >
+            <div className="w-16 h-16 bg-tiktok-magenta/20 rounded-full flex items-center justify-center mb-4 border border-tiktok-magenta/30 animate-pulse">
+              <Shield size={32} className="text-tiktok-magenta" />
+            </div>
+            <h3 className="text-white font-black text-lg mb-2 uppercase tracking-tight italic leading-tight">Lỗi Đồng bộ Local</h3>
+            <p className="text-gray-400 text-[10px] mb-6 px-4 leading-relaxed">
+              Trình duyệt đã ngắt kết nối với thư mục ổ đĩa (Timeout). Cần cấp lại quyền để tiếp tục lưu Log.
+            </p>
+            <button
+              onClick={onReauthorize}
+              className="px-6 py-3 bg-tiktok-cyan text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(37,244,238,0.3)]"
+            >
+              Cấp lại quyền ngay
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <LiveColumnHeader
         username={username}
