@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import DataTable from '../components/DataTable';
+import DataTable, { Column } from '../components/DataTable';
 import Modal from '../components/Modal';
 import { 
   User, 
@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   XCircle,
   Link as LinkIcon,
-  Server
+  Server,
+  Activity
 } from 'lucide-react';
 
 interface UserData {
@@ -38,7 +39,7 @@ export default function UserManagementPage() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const columns = [
+  const columns: Column<UserData>[] = [
     { 
       header: 'Người dùng', 
       accessor: (u: UserData) => (
