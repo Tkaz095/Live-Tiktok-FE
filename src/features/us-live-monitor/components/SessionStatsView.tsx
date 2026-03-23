@@ -22,9 +22,15 @@ interface SessionStats {
 interface SessionStatsViewProps {
   sessionId: number;
   username: string;
+  liveMetrics?: {
+    viewers: number;
+    likes: number;
+    coins: number;
+    chats: number;
+  };
 }
 
-export default function SessionStatsView({ sessionId, username }: SessionStatsViewProps) {
+export default function SessionStatsView({ sessionId, username, liveMetrics }: SessionStatsViewProps) {
   const { getToken } = useAuth();
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,28 +83,28 @@ export default function SessionStatsView({ sessionId, username }: SessionStatsVi
         <StatCard 
           icon={<Coins size={18} />} 
           label="Tổng Xu" 
-          value={stats.summary?.total_coins ?? 0} 
+          value={Math.max(stats.summary?.total_coins ?? 0, liveMetrics?.coins ?? 0)} 
           colorClass="text-tiktok-yellow" 
           bgColorClass="bg-tiktok-yellow/10"
         />
         <StatCard 
           icon={<Heart size={18} />} 
           label="Lượt Thích" 
-          value={stats.summary?.total_likes ?? 0} 
+          value={Math.max(stats.summary?.total_likes ?? 0, liveMetrics?.likes ?? 0)} 
           colorClass="text-tiktok-pink" 
           bgColorClass="bg-tiktok-pink/10"
         />
         <StatCard 
           icon={<MessageSquare size={18} />} 
           label="Bình luận" 
-          value={stats.summary?.total_chats ?? 0} 
+          value={Math.max(stats.summary?.total_chats ?? 0, liveMetrics?.chats ?? 0)} 
           colorClass="text-tiktok-cyan" 
           bgColorClass="bg-tiktok-cyan/10"
         />
         <StatCard 
           icon={<Users size={18} />} 
           label="Người vào" 
-          value={stats.summary?.total_members ?? 0} 
+          value={Math.max(stats.summary?.total_members ?? 0, liveMetrics?.viewers ?? 0)} 
           colorClass="text-purple-500" 
           bgColorClass="bg-purple-500/10"
         />

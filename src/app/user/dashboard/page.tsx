@@ -14,7 +14,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login");
-    } else if (user && user.role_id === 1) {
+    } else if (user && user.role_name === 'admin') {
       router.push("/admin");
     }
   }, [user, isLoading, router]);

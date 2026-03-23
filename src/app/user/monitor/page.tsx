@@ -13,6 +13,7 @@ import DowngradeModal from "@/features/us-subscription/components/DowngradeModal
 import { Plus, Search, Layout, Shield } from "lucide-react";
 import SessionStatsView from "@/features/us-live-monitor/components/SessionStatsView";
 import AddStreamModal from "@/features/us-live-monitor/components/AddStreamModal";
+import { getSessionDirName, saveHandle, loadHandle } from "@/utils/storage";
 
 interface ActiveStream {
   id: number;
@@ -23,36 +24,119 @@ interface ActiveStream {
   avatar_url?: string;
 }
 
+const MONITOR_CACHE_KEY = "monitor_page_cache_v1";
+
+interface MonitorCache {
+  activeStreams: ActiveStream[];
+  selectedStreamId: number | null;
+  liveMetrics: Record<number, { viewers: number, likes: number, coins: number, chats: number }>;
+}
+
+function readMonitorCache(): MonitorCache {
+  if (typeof window === "undefined") {
+    return { activeStreams: [], selectedStreamId: null, liveMetrics: {} };
+  }
+  try {
+    const raw = sessionStorage.getItem(MONITOR_CACHE_KEY);
+    if (!raw) return { activeStreams: [], selectedStreamId: null, liveMetrics: {} };
+    const parsed = JSON.parse(raw) as Partial<MonitorCache>;
+    return {
+      activeStreams: Array.isArray(parsed.activeStreams) ? parsed.activeStreams : [],
+      selectedStreamId: typeof parsed.selectedStreamId === "number" || parsed.selectedStreamId === null
+        ? parsed.selectedStreamId
+        : null,
+      liveMetrics: parsed.liveMetrics && typeof parsed.liveMetrics === "object" ? parsed.liveMetrics : {},
+    };
+  } catch {
+    return { activeStreams: [], selectedStreamId: null, liveMetrics: {} };
+  }
+}
+
 export default function MonitorPage() {
   const router = useRouter();
   const { user, plan, isLoading, getToken, downgradeTimer, setDowngradeTimer } = useAuth();
   const mainRef = useRef<HTMLDivElement>(null);
 
-  const [activeStreams, setActiveStreams] = useState<ActiveStream[]>([]);
+  const [activeStreams, setActiveStreams] = useState<ActiveStream[]>(() => readMonitorCache().activeStreams);
   const [error, setError] = useState<string | null>(null);
   const [showDowngradeModal, setShowDowngradeModal] = useState(false);
   const [url, setUrl] = useState("");
   const [limitHit, setLimitHit] = useState(false);
-  const [selectedStreamId, setSelectedStreamId] = useState<number | null>(null);
+  const [selectedStreamId, setSelectedStreamId] = useState<number | null>(() => readMonitorCache().selectedStreamId);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [joiningStreams, setJoiningStreams] = useState<string[]>([]);
   const [directoryHandle, setDirectoryHandle] = useState<any>(null);
   const [showStorageModal, setShowStorageModal] = useState(false);
   const [pendingJoinUrl, setPendingJoinUrl] = useState<string | null>(null);
 
+  const [liveMetrics, setLiveMetrics] = useState<Record<number, { viewers: number, likes: number, coins: number, chats: number }>>(
+    () => readMonitorCache().liveMetrics
+  );
+
+  // Persist monitor state so navigating away and back won't re-render from empty state.
+  useEffect(() => {
+    const cache: MonitorCache = {
+      activeStreams,
+      selectedStreamId,
+      liveMetrics,
+    };
+    sessionStorage.setItem(MONITOR_CACHE_KEY, JSON.stringify(cache));
+  }, [activeStreams, selectedStreamId, liveMetrics]);
+
+  // Restore handle from IndexedDB on mount
+  useEffect(() => {
+    const restoreHandle = async () => {
+      try {
+        const handle = await loadHandle();
+        if (handle) {
+          // Only restore when permission is truly granted.
+          // If permission is prompt/denied, force re-auth to avoid NotAllowedError later.
+          const perm = await (handle as any).queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            setDirectoryHandle(handle);
+          } else {
+            setDirectoryHandle(null);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to restore handle:", err);
+        setDirectoryHandle(null);
+      }
+    };
+    restoreHandle();
+  }, []);
+
   const handleConfirmStorage = async () => {
     try {
-      const handle = await (window as any).showDirectoryPicker();
-      
-      // [FIX] SecurityError: Refresh permission within this user-activated click event
-      if (await handle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
-        await handle.requestPermission({ mode: 'readwrite' });
+      if (!(window as any).showDirectoryPicker || !window.isSecureContext) {
+        setError("Trình duyệt hiện tại không hỗ trợ chọn thư mục local. Hãy dùng Chrome/Edge bản mới qua HTTPS hoặc localhost.");
+        return;
       }
 
-      // Prime for existing active streams to ensure they can keep writing
-      const dateStr = new Date().toISOString().split('T')[0];
+      let handle = directoryHandle;
+      
+      if (!handle) {
+        handle = await (window as any).showDirectoryPicker();
+      }
+      
+      // Request permission (triggers browser prompt)
+      const currentPerm = await (handle as any).queryPermission({ mode: 'readwrite' });
+      if (currentPerm !== 'granted') {
+        const requested = await (handle as any).requestPermission({ mode: 'readwrite' });
+        if (requested !== 'granted') {
+          setError("Bạn cần cấp quyền đọc/ghi thư mục để bật lưu local.");
+          setDirectoryHandle(null);
+          return;
+        }
+      }
+
+      // Save to IndexedDB for next time
+      await saveHandle(handle);
+
+      // Prime for existing active streams
       for (const stream of activeStreams) {
         try {
-          const sessionDirName = `${stream.tiktok_handle}_${dateStr}_ID${stream.id}`;
+          const sessionDirName = getSessionDirName(stream.tiktok_handle, stream.id);
           await handle.getDirectoryHandle(sessionDirName, { create: true });
         } catch (e) {
           console.warn("Failed to prime folder for stream:", stream.id, e);
@@ -66,8 +150,8 @@ export default function MonitorPage() {
         setPendingJoinUrl(null);
       }
     } catch (err) {
-      console.warn("User cancelled directory picker:", err);
-      setError("Bạn cần chọn thư mục để tiếp tục (Bản Miễn phí).");
+      console.warn("User cancelled directory picker or permission:", err);
+      setError("Bạn cần chọn thư mục và cấp quyền để tiếp tục.");
     }
   };
 
@@ -80,18 +164,26 @@ export default function MonitorPage() {
       const data = await res.json();
       if (data.success) {
         setActiveStreams(data.streams);
+        sessionStorage.setItem(
+          MONITOR_CACHE_KEY,
+          JSON.stringify({
+            activeStreams: data.streams,
+            selectedStreamId,
+            liveMetrics,
+          } as MonitorCache)
+        );
       }
     } catch (err) {
       console.error("Fetch streams error:", err);
     }
-  }, [getToken]);
+  }, [getToken, selectedStreamId, liveMetrics]);
 
   // Auth guard — only customers (role_id=2) can access
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
         router.push("/login");
-      } else if (user.role_id === 1) {
+      } else if (user.role_name === 'admin') {
         router.push("/admin");
       } else {
         fetchActiveStreams();
@@ -99,13 +191,27 @@ export default function MonitorPage() {
     }
   }, [user, isLoading, router, fetchActiveStreams]);
 
+  // Proactive storage check before monitoring to avoid browser write blocks.
+  useEffect(() => {
+    if (!isLoading && user && activeStreams.length > 0 && !directoryHandle && !showStorageModal) {
+      const timer = setTimeout(() => {
+        setShowStorageModal(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, user, activeStreams, directoryHandle, showStorageModal]);
+
   const handleJoinAction = async (inputUrl?: string, bypassGate = false) => {
     const targetUrl = inputUrl || url;
     if (!targetUrl.trim()) return;
 
     if (plan && activeStreams.length >= plan.maxColumns && plan.maxColumns !== -1) {
       setLimitHit(true);
-      setTimeout(() => setLimitHit(false), 3000);
+      setError(`Gói ${plan.label} chỉ cho phép theo dõi tối đa ${plan.maxColumns} luồng cùng lúc.`);
+      setTimeout(() => {
+        setLimitHit(false);
+        setError(null);
+      }, 3000);
       return;
     }
 
@@ -114,14 +220,23 @@ export default function MonitorPage() {
       : targetUrl.replace("@", "");
 
     if (!username) return;
+
+    // Prevent duplicate clicks & show instant UI feedback
+    if (joiningStreams.includes(username) || activeStreams.some(s => s.tiktok_handle === username)) {
+      setUrl("");
+      return;
+    }
+
     setError(null);
 
-    // Each new join action requires a confirmation if on Free plan
-    if (user?.subscription === "free" && !bypassGate) {
+    // Require storage permission before joining any stream to avoid local FS write errors.
+    if (!bypassGate && !directoryHandle) {
       setPendingJoinUrl(targetUrl);
       setShowStorageModal(true);
       return;
     }
+
+    setJoiningStreams(prev => [...prev, username]);
 
     try {
       const token = getToken();
@@ -176,6 +291,9 @@ export default function MonitorPage() {
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Lỗi kết nối");
+    } finally {
+      // Remove from loading state regardless of outcome
+      setJoiningStreams(prev => prev.filter(u => u !== username));
     }
   };
 
@@ -193,18 +311,18 @@ export default function MonitorPage() {
       return;
     }
 
+    // Optimistic update to remove delay
+    setActiveStreams(prev => prev.filter(s => s.id !== session.id));
+
     try {
       const token = getToken();
-      const res = await fetch(`${API_BASE}/streams/${session.id}`, {
+      await fetch(`${API_BASE}/streams/${session.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = await res.json();
-      if (data.success) {
-        setActiveStreams(prev => prev.filter(s => s.id !== session.id));
-      }
     } catch (err) {
       console.error("Disconnect error:", err);
+      // Optional: Re-fetch or re-add stream on failure could be implemented here
     }
   }, [activeStreams, getToken]);
 
@@ -288,30 +406,45 @@ export default function MonitorPage() {
               )}
             </AnimatePresence>
 
-            <div className="h-full flex flex-col md:flex-row gap-4 md:min-w-max items-center md:items-stretch transition-all">
-              <AnimatePresence mode="popLayout">
-                {activeStreams.map((stream) => (
-                  <div
-                    key={stream.id}
-                    className={`h-full transition-all ${selectedStreamId === stream.id ? 'ring-2 ring-tiktok-cyan ring-offset-4 ring-offset-black rounded-3xl' : ''}`}
-                  >
-                    <LiveColumn
-                      username={stream.tiktok_handle}
-                      sessionId={stream.id}
-                      initialAvatar={stream.avatar_url}
-                      directoryHandle={directoryHandle}
-                      onShowStats={() => setSelectedStreamId(stream.id)}
-                      onReauthorize={() => setShowStorageModal(true)}
-                      onClose={() => {
-                        handleClose(stream.id);
-                        if (selectedStreamId === stream.id) setSelectedStreamId(null);
-                      }}
-                    />
-                  </div>
-                ))}
-              </AnimatePresence>
+            <div className="flex flex-col gap-8 w-full items-stretch transition-all">
+              {activeStreams.map((stream) => (
+                <div
+                  key={stream.id}
+                  className={`w-full transition-all ${selectedStreamId === stream.id ? 'ring-2 ring-tiktok-cyan ring-offset-4 ring-offset-[#0d1117] rounded-[12px]' : ''}`}
+                >
+                  <LiveColumn
+                    username={stream.tiktok_handle}
+                    sessionId={stream.id}
+                    initialAvatar={stream.avatar_url}
+                    directoryHandle={directoryHandle}
+                    onShowStats={() => setSelectedStreamId(stream.id)}
+                    onReauthorize={() => setShowStorageModal(true)}
+                    onMetricsUpdate={(metrics) => setLiveMetrics(prev => ({ ...prev, [stream.id]: metrics }))}
+                    onClose={() => {
+                      handleClose(stream.id);
+                      if (selectedStreamId === stream.id) setSelectedStreamId(null);
+                    }}
+                  />
+                </div>
+              ))}
 
-              {activeStreams.length === 0 && (
+              {/* Optimistic Skeletons for instant feedback */}
+              {joiningStreams.map((username) => (
+                <div
+                  key={`joining-${username}`}
+                  className="w-full h-[300px] flex flex-col items-center justify-center bg-tiktok-card rounded-[12px] border border-tiktok-cyan/30 overflow-hidden shadow-2xl transition-all"
+                >
+                  <div className="w-16 h-16 border-4 border-tiktok-cyan border-t-transparent rounded-full animate-spin mb-4" />
+                  <p className="text-tiktok-cyan font-bold text-sm uppercase tracking-widest animate-pulse">
+                    Đang thiết lập kênh...
+                  </p>
+                  <p className="text-gray-500 font-bold text-lg mt-2">
+                    @{username}
+                  </p>
+                </div>
+              ))}
+
+              {activeStreams.length === 0 && joiningStreams.length === 0 && (
                 <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-4 mt-20">
                   <div className="w-16 h-16 rounded-full bg-[#111] flex items-center justify-center border border-[#333]">
                     <span className="text-2xl text-gray-400">+</span>
@@ -327,39 +460,6 @@ export default function MonitorPage() {
             </div>
           </div>
 
-          {/* Statistics Frame (Bottom) - Conditional Rendering */}
-          <AnimatePresence>
-            {selectedStreamId && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 230, opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="border-t border-tiktok-border bg-tiktok-surface p-5 shrink-0 overflow-hidden relative shadow-[0_-10px_30px_rgba(0,0,0,0.5)]"
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-tiktok-cyan shadow-[0_0_10px_rgba(37,244,238,0.5)] animate-pulse" />
-                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] select-none">
-                      Thống kê thời gian thực: @{activeStreams.find(s => s.id === selectedStreamId)?.tiktok_handle}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setSelectedStreamId(null)}
-                    className="text-gray-500 hover:text-white transition-colors p-1"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="h-[200px]">
-                  <SessionStatsView
-                    sessionId={selectedStreamId}
-                    username={activeStreams.find(s => s.id === selectedStreamId)?.tiktok_handle || ""}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </main>
       </div>
 
@@ -402,14 +502,8 @@ export default function MonitorPage() {
                 <div>
                   <h2 className="text-2xl font-black text-white mb-2 leading-tight">Thiết lập Lưu trữ Cục bộ</h2>
                   <p className="text-gray-400 text-sm leading-relaxed px-4">
-                    Để đạt hiệu suất tốt nhất và bảo mật dữ liệu, bạn cần cấp quyền cho hệ thống ghi Log vào thư mục bên dưới:
+                    Hệ thống cần quyền lưu trữ để ghi Log dữ liệu trực tiếp về máy tính của bạn. Bạn có thể <strong>tự do chọn bất kỳ thư mục nào</strong> (ví dụ: ổ D, thư mục Downloads...) để tiến hành lưu trữ an toàn.
                   </p>
-                  <div className="mt-4 flex flex-col gap-2">
-                    <div className="p-3 bg-black/40 rounded-xl border border-white/5 font-mono text-[11px] text-tiktok-cyan select-all break-all flex items-center justify-between group">
-                      <span>{user?.data_storage_path || 'C:\\Tiktok Monitor'}</span>
-                      <Shield size={14} className="text-tiktok-cyan/50" />
-                    </div>
-                  </div>
                 </div>
 
                 <div className="w-full bg-white/5 rounded-2xl p-4 text-left border border-white/5">
@@ -419,7 +513,7 @@ export default function MonitorPage() {
                   </div>
                   <div className="flex items-start gap-3 mt-3">
                     <div className="w-5 h-5 rounded-full bg-tiktok-cyan/20 flex items-center justify-center text-[10px] font-bold text-tiktok-cyan mt-0.5 shrink-0">2</div>
-                    <p className="text-[11px] text-gray-300">Chọn đúng thư mục trong bảng điều khiển của Trình duyệt để xác thực.</p>
+                    <p className="text-[11px] text-gray-300">Tạo hoặc chọn một thư mục bất kỳ trên máy để xác thực cấp quyền.</p>
                   </div>
                 </div>
 

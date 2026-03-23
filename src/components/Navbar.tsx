@@ -89,18 +89,6 @@ export default function Navbar({ activeCount, directoryHandle }: NavbarProps) {
 
       {/* ── Right panel ──────────────── */}
       <div className="flex items-center gap-6 shrink-0">
-        {/* Storage Status Badge */}
-        {user?.subscription === "free" && pathname === "/user/monitor" && (
-          <div className={`hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${
-            directoryHandle 
-              ? "bg-tiktok-cyan/10 border-tiktok-cyan/30 text-tiktok-cyan shadow-[0_0_15px_rgba(37,244,238,0.1)]" 
-              : "bg-white/5 border-white/10 text-gray-500"
-          }`}>
-            {directoryHandle ? <FolderCheck size={12} /> : <FolderX size={12} />}
-            <span>{directoryHandle ? "Sync On" : "Sync Off"}</span>
-          </div>
-        )}
-
         {/* Compact Status */}
         <div className="hidden xl:flex items-center gap-3 px-3 py-1.5 bg-tiktok-dark/30 border border-tiktok-border rounded-xl">
           <div className="flex flex-col items-end gap-1">

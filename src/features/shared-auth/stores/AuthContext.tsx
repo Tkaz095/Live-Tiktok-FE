@@ -10,7 +10,7 @@ interface AuthContextValue {
   user: User | null;
   plan: SubscriptionInfo | null;
   isLoading: boolean;
-  login: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; error?: string; role_id?: number }>;
+  login: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; error?: string; role_name?: string }>;
   logout: () => void;
   getToken: () => string | null;
   updateSubscription: (maxLiveSlots: number) => void;
@@ -46,20 +46,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       
       if (data.success) {
-        const role_id = data.user.role_id;
+        const role_name = (data.user.role_name || 'user').toLowerCase();
         const mappedUser: User = {
           id: data.user.id.toString(),
           name: data.user.full_name || data.user.username,
           email: data.user.email,
           avatar: `https://api.dicebear.com/8.x/thumbs/svg?seed=${data.user.username}&backgroundColor=0d1117`,
-          role_id,
-          subscription: role_id === 1 ? 'pro' : 'free',
+          role_name,
+          subscription: role_name === 'admin' ? 'pro' : 'free',
           data_storage_path: data.user.data_storage_path
         };
         setUser(mappedUser);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedUser));
         localStorage.setItem("token", data.token);
-        return { success: true, role_id };
+        return { success: true, role_name };
       }
       return { success: false, error: data.error || "Sai tài khoản hoặc mật khẩu." };
     } catch (err) {
