@@ -5,12 +5,12 @@
 @import "./styles/us-live-monitor/stats.css";
 
 :root {
-  --background: #08080a;
-  --foreground: #ffffff;
-  --tiktok-border: rgba(255, 255, 255, 0.08);
-  --tiktok-surface: #121216;
-  --tiktok-dark: #0d0d0f;
-  --tiktok-card: #14141a;
+  --background: #0d131b;
+  --foreground: #e8edf4;
+  --tiktok-border: rgba(170, 188, 209, 0.18);
+  --tiktok-surface: #131a24;
+  --tiktok-dark: #101722;
+  --tiktok-card: #17202b;
 }
 
 [data-theme='light'] {
@@ -39,8 +39,11 @@
 
 body {
   background-color: var(--background);
+  background-image: radial-gradient(circle at 15% -10%, rgba(37, 244, 238, 0.08), transparent 35%), radial-gradient(circle at 85% -15%, rgba(254, 44, 85, 0.06), transparent 30%);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom Scrollbar for Chat & Main */
@@ -52,11 +55,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(156, 176, 200, 0.22);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(176, 198, 222, 0.34);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -71,8 +74,8 @@ body {
   display: block;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(254, 44, 85, 0.3);
+  background: rgba(120, 153, 189, 0.42);
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: rgba(254, 44, 85, 0.5);
+  background: rgba(144, 179, 217, 0.58);
 }

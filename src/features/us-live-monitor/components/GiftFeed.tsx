@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Gift, Clock, TrendingUp, Hash, User, ShieldAlert, ChevronDown } from "lucide-react";
+import { Gift, Clock, TrendingUp, Hash, ShieldAlert, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { GiftItem } from "../types/live.types";
 
@@ -12,27 +12,13 @@ interface GiftFeedProps {
 }
 
 export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
-  const [sortBy, setSortBy] = useState<'time' | 'top_user_value' | 'top_total_gift' | 'whale_alert' | 'top_count_gift'>('time');
+  const [sortBy, setSortBy] = useState<'time' | 'top_total_gift' | 'whale_alert' | 'top_count_gift'>('time');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sorting / Aggregation Logic
   const getDisplayGifts = () => {
     if (sortBy === 'time') return gifts;
-
-    if (sortBy === 'top_user_value') {
-      // Aggregate by user
-      const userMap: Record<string, { user: string, amount: number, value: number, icon: string, id: string }> = {};
-      gifts.forEach(g => {
-        if (!userMap[g.user]) {
-          userMap[g.user] = { ...g, amount: 0, value: 0 };
-        }
-        userMap[g.user].amount += g.amount;
-        userMap[g.user].value += g.value;
-      });
-      return Object.values(userMap).sort((a, b) => b.value - a.value)
-        .map(u => ({ ...u, giftName: 'Đại gia chi đậm nhất', isBigGift: u.value >= 500 }));
-    }
 
     if (sortBy === 'top_total_gift' || sortBy === 'top_count_gift') {
       // Aggregate by gift record
@@ -62,7 +48,6 @@ export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
 
   const filterOptions = [
     { id: 'time', label: 'Tất cả (Mới nhất)', icon: <Clock size={12} /> },
-    { id: 'top_user_value', label: 'Đại gia chi đậm', icon: <User size={12} className="text-tiktok-cyan" /> },
     { id: 'top_total_gift', label: 'Quà có giá trị cao nhất', icon: <TrendingUp size={12} className="text-tiktok-pink" /> },
     { id: 'whale_alert', label: 'Quà tặng lớn (>1 xu)', icon: <ShieldAlert size={12} className="text-tiktok-yellow" /> },
     { id: 'top_count_gift', label: 'Quà tặng phổ biến nhất', icon: <Hash size={12} className="text-tiktok-yellow" /> },
@@ -161,13 +146,11 @@ export default function GiftFeed({ gifts, connected, flex1 }: GiftFeedProps) {
                       {sortBy.startsWith('top_total_gift') || sortBy.startsWith('top_unit_gift') ? g.giftName : g.user}
                     </span>
                     <span className="text-[10px] text-tiktok-yellow leading-tight">
-                      {sortBy === 'top_user_value' 
-                        ? `Tổng chi: ${g.value} xu` 
-                        : (sortBy === 'top_total_gift' || sortBy === 'top_count_gift')
-                          ? `Số lượng: ${g.amount} | Tổng: ${g.value} xu`
-                          : (sortBy === 'whale_alert')
-                            ? `Quà lớn: ${g.giftName} (${g.value / g.amount} xu)`
-                            : `Đã tặng ${g.giftName}`
+                      {(sortBy === 'top_total_gift' || sortBy === 'top_count_gift')
+                        ? `Số lượng: ${g.amount} | Tổng: ${g.value} xu`
+                        : (sortBy === 'whale_alert')
+                          ? `Quà lớn: ${g.giftName} (${g.value / g.amount} xu)`
+                          : `Đã tặng ${g.giftName}`
                       }
                     </span>
                   </div>

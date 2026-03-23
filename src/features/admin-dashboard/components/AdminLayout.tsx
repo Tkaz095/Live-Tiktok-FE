@@ -15,13 +15,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!isLoading) {
       if (!user) {
         router.push('/login');
-      } else if (user.role_id !== 1) {
+      } else if (user.role_name !== 'admin') {
         router.push('/user');
       }
     }
   }, [user, isLoading, router]);
 
-  if (isLoading || !user || user.role_id !== 1) {
+  if (isLoading || !user || user.role_name !== 'admin') {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

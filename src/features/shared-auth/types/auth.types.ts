@@ -43,7 +43,7 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
-  role_id: number; // 1 = admin, 2 = customer
+  role_name: string; // 'admin' or 'user'
   subscription: SubscriptionTier;
   data_storage_path?: string | null;
 }

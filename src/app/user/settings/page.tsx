@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, Shield, Moon, Sun, Monitor, HardDrive, Mail, Lock, Save, Globe } from "lucide-react";
+import { Shield, Moon, Sun, Monitor, Mail, Lock, Save, Globe, Settings } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import FolderPickerModal from "@/components/FolderPickerModal";
 import { useAuth } from "@/features/shared-auth/stores/AuthContext";
 import { useTheme } from "@/features/shared-theme/ThemeContext";
 import { API_BASE } from "@/features/shared-auth/api/authApi";
@@ -12,18 +11,8 @@ import { API_BASE } from "@/features/shared-auth/api/authApi";
 export default function SettingsPage() {
   const { user, getToken, updateUser } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [saveLocation, setSaveLocation] = useState(user?.data_storage_path || "C:/Users/TikTok-Monitor/Data");
   const [isSaving, setIsSaving] = useState(false);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("appearance");
-
-  // Sync saveLocation when user data is loaded (Fix F5 loss)
-  useEffect(() => {
-    if (user?.data_storage_path) {
-      setSaveLocation(user.data_storage_path);
-    }
-  }, [user?.data_storage_path]);
 
   const scrollToSection = (id: string) => {
     setActiveSection(id);
@@ -31,15 +20,6 @@ export default function SettingsPage() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
-
-  const handleSelectDirectory = () => {
-    setIsModalOpen(true);
-  };
-
-  const onFolderSelect = (path: string) => {
-    setSaveLocation(path);
-    setIsModalOpen(false);
   };
 
   const handleSave = async () => {
@@ -54,13 +34,12 @@ export default function SettingsPage() {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          data_storage_path: saveLocation
+          // Update user details here if needed in the future
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        updateUser({ data_storage_path: saveLocation });
         alert("Cài đặt đã được lưu thành công!");
       } else {
         alert(data.error || "Gặp lỗi khi lưu cài đặt.");
@@ -96,7 +75,6 @@ export default function SettingsPage() {
                 { id: "appearance", label: "Giao diện", icon: Moon },
                 { id: "account", label: "Tài khoản", icon: Mail },
                 { id: "security", label: "Bảo mật", icon: Shield },
-                { id: "storage", label: "Lưu trữ", icon: HardDrive },
                 { id: "language", label: "Ngôn ngữ", icon: Globe },
               ].map((item, i) => (
                 <button
@@ -200,32 +178,6 @@ export default function SettingsPage() {
                 </button>
               </section>
 
-              {/* Storage Section */}
-              <section id="storage" className="bg-tiktok-surface border border-tiktok-border rounded-3xl p-6 space-y-6 shadow-xl scroll-mt-6">
-                <div className="flex items-center gap-2 border-b border-tiktok-border pb-4">
-                  <HardDrive size={16} className="text-tiktok-cyan" />
-                  <h3 className="text-xs font-black uppercase tracking-widest">Lưu trữ dữ liệu</h3>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Thư mục lưu Cache Chat & Gifts</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={saveLocation}
-                      onChange={(e) => setSaveLocation(e.target.value)}
-                      className="flex-1 bg-tiktok-dark border border-tiktok-border rounded-xl py-3 px-4 text-xs font-bold focus:outline-none focus:border-tiktok-cyan transition-all"
-                    />
-                    <button 
-                      onClick={handleSelectDirectory}
-                      disabled={isSelecting}
-                      className="px-4 bg-tiktok-dark border border-tiktok-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {isSelecting ? "Đang mở..." : "Chọn"}
-                    </button>
-                  </div>
-                </div>
-              </section>
 
               {/* Language Section */}
               <section id="language" className="bg-tiktok-surface border border-tiktok-border rounded-3xl p-6 space-y-6 shadow-xl scroll-mt-6 mb-10">
@@ -263,14 +215,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
-
-      <FolderPickerModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSelect={onFolderSelect}
-        initialPath={saveLocation}
-        token={getToken()}
-      />
     </div>
   );
 }

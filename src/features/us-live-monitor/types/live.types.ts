@@ -34,6 +34,8 @@ export interface TikTokGiftData {
   name?: string;
   gift_name?: string;
   icon?: string;
+  giftPictureUrl?: string;
+  image?: string;
   count?: number;
   diamond_value?: number;
   coin_value?: number;

@@ -25,7 +25,7 @@ export default function LoginForm({ onOpenRegister }: { onOpenRegister: () => vo
 
     if (res.success) {
       // Redirect based on role
-      if (res.role_id === 1) {
+      if (res.role_name === 'admin') {
         router.push("/admin");
       } else {
         router.push("/user");
